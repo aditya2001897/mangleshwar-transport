@@ -757,6 +757,7 @@ async function loadVehiclesFromSupabase() {
 }
 
 loadVehiclesFromSupabase();
+loadDriversFromSupabase();
 
     const Store = {
         get: (k, def) => JSON.parse(localStorage.getItem('MT_' + k)) || def,
@@ -771,6 +772,7 @@ loadVehiclesFromSupabase();
         employees: Store.get('employees', [
             { id: 1, username: 'emp_01', role: 'employee' }
         ]),
+        partyTrips: Store.get('partyTrips', []),
         mtTrips: Store.get('mtTrips', [{
             id: 1, receiptNo: '2610704726', tripDate: '2026-08-14', paymentMode: 'Credit / Udhaar', truckNo: 'MP07 ZQ 8699',
             partyName: 'TIRUPATI BALAJI CONSTRUCTION', mineralType: 'GSB Crusher', crusherName: 'sanichara', royaltyNo: '2601225130',
@@ -787,6 +789,7 @@ loadVehiclesFromSupabase();
 
     function saveState() {
         Store.set('mtTrips', state.mtTrips);
+        Store.set('partyTrips', state.partyTrips || []);
         Store.set('drivers', state.drivers);
         Store.set('vehicles', state.vehicles);
         Store.set('audits', state.audits);
@@ -923,25 +926,14 @@ loadVehiclesFromSupabase();
         if (link && window.innerWidth <= 768) closeMobileMenu();
     });
 
-    function launchSystem(username, role) {
-        state.user = { username, role };
-        document.getElementById('authOverlay').style.display = 'none';
-        document.getElementById('appShell').style.display = 'flex';
-        document.getElementById('activeUserLabel').innerText = `${username} (${role.toUpperCase()})`;
-
-        if(role !== 'admin') {
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
-        }
-
-        populateSelects();
-        renderDashboard();
-        renderMtInvoices();
-        renderPartyInvoices();
-        renderDrivers();
-        renderVehicles();
-        renderUserManagement();
-        renderAudits();
-        recalcGst();
+    async function launchSystem(username,role){
+        state.user={username,role};
+        if(!await loadAllFromSupabase(true))return;
+        document.getElementById('authOverlay').style.display='none';
+        document.getElementById('appShell').style.display='flex';
+        document.getElementById('activeUserLabel').innerText=`${username} (${role.toUpperCase()})`;
+        if(role!=='admin')document.querySelectorAll('.admin-only').forEach(el=>el.style.display='none');
+        populateSelects();renderDashboard();renderMtInvoices();renderPartyInvoices();renderDrivers();renderVehicles();renderUserManagement();renderAudits();recalcGst();
     }
 
     function nav(paneId, el) {
@@ -976,53 +968,110 @@ loadVehiclesFromSupabase();
         document.getElementById('mtNetAmount').value = (gross - totalExp).toFixed(2);
     }
 
-    // INVOICE SAVE / DELETE
-    function commitMtSave() {
-        const id = document.getElementById('editMtId').value;
-        const record = {
-            id: id ? parseInt(id) : Date.now(),
-            receiptNo: document.getElementById('mtReceiptNo').value || '2610704726',
-            tripDate: document.getElementById('mtTripDate').value,
-            paymentMode: document.getElementById('mtPaymentMode').value,
-            truckNo: document.getElementById('mtTruckNo').value,
-            partyName: document.getElementById('mtPartyName').value,
-            mineralType: document.getElementById('mtMineralType').value,
-            crusherName: document.getElementById('mtCrusherName').value,
-            royaltyNo: document.getElementById('mtRoyaltyNo').value,
-            driverName: document.getElementById('mtDriverName').value,
-            dieselPump: document.getElementById('mtDieselPump').value,
-            dieselBillNo: document.getElementById('mtDieselBillNo').value,
-            dieselLitres: parseFloat(document.getElementById('mtDieselLitres').value) || 0,
-            weightTons: parseFloat(document.getElementById('mtWeightTons').value) || 0,
-            ratePerTon: parseFloat(document.getElementById('mtRatePerTon').value) || 0,
-            grossFreight: parseFloat(document.getElementById('mtGrossFreight').value) || 0,
-            dieselAmt: parseFloat(document.getElementById('mtDieselAmt').value) || 0,
-            driverBhatta: parseFloat(document.getElementById('mtDriverBhatta').value) || 0,
-            fastagAmt: parseFloat(document.getElementById('mtFastagAmt').value) || 0,
-            truckExp: parseFloat(document.getElementById('mtTruckExp').value) || 0,
-            netAmount: parseFloat(document.getElementById('mtNetAmount').value) || 0,
-            docs: { ...base64Cache }
-        };
-
-        const exec = () => {
-            if(id) {
-                const idx = state.mtTrips.findIndex(t => t.id === parseInt(id));
-                state.mtTrips[idx] = record;
-            } else { state.mtTrips.unshift(record); }
-            saveState(); renderDashboard(); renderMtInvoices(); renderPartyInvoices(); resetMtForm();
-            alert('Transport Invoice Saved Successfully!');
-        };
-
-        if(id) requestEmployeeActionApproval("Edit Invoice", exec); else exec();
+    // ===== ALL TABLES SUPABASE SYNC =====
+    function cloudError(prefix, error) {
+        console.error(prefix, error);
+        alert("❌ " + prefix + "\n" + (error?.message || error || "Unknown error"));
     }
 
-    function deleteInvoice(id) {
-        requestEmployeeActionApproval("Delete Invoice Entry", () => {
-            if(confirm("Are you sure you want to permanently delete this Invoice?")) {
-                state.mtTrips = state.mtTrips.filter(t => t.id !== id);
-                saveState(); renderDashboard(); renderMtInvoices(); renderPartyInvoices();
-                alert("Invoice Deleted!");
-            }
+    function mapMtRow(t) {
+        return {id:t.id,receiptNo:t.receipt_no||'',tripDate:t.trip_date||'',paymentMode:t.payment_mode||'',
+        truckNo:t.truck_no||'',partyName:t.party_name||'',mineralType:t.mineral_type||'',crusherName:t.crusher_name||'',
+        royaltyNo:t.royalty_no||'',driverName:t.driver_name||'',dieselPump:t.diesel_pump||'',dieselBillNo:t.diesel_bill_no||'',
+        dieselLitres:Number(t.diesel_litres)||0,weightTons:Number(t.weight_tons)||0,ratePerTon:Number(t.rate_per_ton)||0,
+        grossFreight:Number(t.gross_freight)||0,dieselAmt:Number(t.diesel_amt)||0,driverBhatta:Number(t.driver_bhatta)||0,
+        fastagAmt:Number(t.fastag_amt)||0,truckExp:Number(t.truck_exp)||0,netAmount:Number(t.net_amount)||0,docs:t.docs||{}};
+    }
+    function mapPartyRow(p) {
+        return {id:p.id,pTripDate:p.p_trip_date||'',pTruckNo:p.p_truck_no||'',pPartyName:p.p_party_name||'',
+        pMineralType:p.p_mineral_type||'',pReceiptNo:p.p_receipt_no||'',pCrusherName:p.p_crusher_name||'',
+        pDieselQty:Number(p.p_diesel_qty)||0,pDieselAmt:Number(p.p_diesel_amt)||0,pTotalTon:Number(p.p_total_ton)||0,
+        pBhadaRate:Number(p.p_bhada_rate)||0,pTotalFreight:Number(p.p_total_freight)||0};
+    }
+    function mapDriverRow(d){return {id:d.id,name:d.name||'',phone:d.phone||'',dl:d.dl||'',
+        joinDate:d.joining_date||d.join_date||d.joindate||''};}
+    function mapVehicleRow(v){return {id:v.id,vNo:v.v_no||'',ins:v.insurance_expiry||'',
+        fit:v.fitness_expiry||'',perm:v.permit_expiry||''};}
+
+    async function loadAllFromSupabase(showErrors=true) {
+        const rs=await Promise.all([
+            supabaseClient.from('employees').select('*').order('id',{ascending:true}),
+            supabaseClient.from('mt_trips').select('*').order('id',{ascending:false}),
+            supabaseClient.from('party_trips').select('*').order('id',{ascending:false}),
+            supabaseClient.from('drivers').select('*').order('id',{ascending:true}),
+            supabaseClient.from('vehicles').select('*').order('id',{ascending:true}),
+            supabaseClient.from('audit_logs').select('*').order('id',{ascending:false})
+        ]);
+        const names=['Employees','MT invoices','Party invoices','Drivers','Vehicles','Audit logs'];
+        const bad=rs.findIndex(x=>x.error);
+        if(bad>=0){if(showErrors)cloudError("Supabase "+names[bad]+" load failed.",rs[bad].error);return false;}
+        state.employees=(rs[0].data||[]).map(e=>({id:e.id,username:e.username||'',role:e.role||'employee'}));
+        state.mtTrips=(rs[1].data||[]).map(mapMtRow);
+        state.partyTrips=(rs[2].data||[]).map(mapPartyRow);
+        state.drivers=(rs[3].data||[]).map(mapDriverRow);
+        state.vehicles=(rs[4].data||[]).map(mapVehicleRow);
+        state.audits=(rs[5].data||[]).map(a=>({id:a.id,timestamp:a.timestamp||a.created_at||'',user:a.user||'',
+            type:a.action_type||a.type||'',entityId:a.entity_id??'',before:a.before_change??a.before??'',
+            after:a.after_change??a.after??''}));
+        populateSelects();renderDashboard();renderMtInvoices();renderPartyInvoices();renderDrivers();renderVehicles();
+        renderUserManagement();renderAudits();return true;
+    }
+    async function writeAudit(type,id,beforeValue,afterValue){
+        const row={id:Date.now(),timestamp:new Date().toISOString(),user:state.user?.username||'system',
+            action_type:type,entity_id:String(id??''),before_change:JSON.stringify(beforeValue??null),
+            after_change:JSON.stringify(afterValue??null)};
+        const {data,error}=await supabaseClient.from('audit_logs').insert(row).select().single();
+        if(error){console.error("Audit log error:",error);return;}
+        if(data){state.audits.unshift({id:data.id,timestamp:data.timestamp||row.timestamp,user:data.user||row.user,
+            type:data.action_type||row.action_type,entityId:data.entity_id||row.entity_id,
+            before:data.before_change||row.before_change,after:data.after_change||row.after_change});renderAudits();}
+    }
+    function mtToRow(r){return {id:r.id,receipt_no:r.receiptNo||'',trip_date:r.tripDate||null,payment_mode:r.paymentMode||'',
+        truck_no:r.truckNo||'',party_name:r.partyName||'',mineral_type:r.mineralType||'',crusher_name:r.crusherName||'',
+        royalty_no:r.royaltyNo||'',driver_name:r.driverName||'',diesel_pump:r.dieselPump||'',diesel_bill_no:r.dieselBillNo||'',
+        diesel_litres:Number(r.dieselLitres)||0,weight_tons:Number(r.weightTons)||0,rate_per_ton:Number(r.ratePerTon)||0,
+        gross_freight:Number(r.grossFreight)||0,diesel_amt:Number(r.dieselAmt)||0,driver_bhatta:Number(r.driverBhatta)||0,
+        fastag_amt:Number(r.fastagAmt)||0,truck_exp:Number(r.truckExp)||0,net_amount:Number(r.netAmount)||0,docs:r.docs||{}};}
+    function partyFromMt(r){return {id:r.id,p_trip_date:r.tripDate||null,p_truck_no:r.truckNo||'',p_party_name:r.partyName||'',
+        p_mineral_type:r.mineralType||'',p_receipt_no:r.receiptNo||'',p_crusher_name:r.crusherName||'',
+        p_diesel_qty:Number(r.dieselLitres)||0,p_diesel_amt:Number(r.dieselAmt)||0,p_total_ton:Number(r.weightTons)||0,
+        p_bhada_rate:Number(r.ratePerTon)||0,p_total_freight:Number(r.grossFreight)||0};}
+
+    // INVOICE SAVE / DELETE
+    async function commitMtSave() {
+        const id=document.getElementById('editMtId').value;
+        const r={id:id?parseInt(id):Date.now(),receiptNo:document.getElementById('mtReceiptNo').value||'2610704726',
+        tripDate:document.getElementById('mtTripDate').value,paymentMode:document.getElementById('mtPaymentMode').value,
+        truckNo:document.getElementById('mtTruckNo').value,partyName:document.getElementById('mtPartyName').value,
+        mineralType:document.getElementById('mtMineralType').value,crusherName:document.getElementById('mtCrusherName').value,
+        royaltyNo:document.getElementById('mtRoyaltyNo').value,driverName:document.getElementById('mtDriverName').value,
+        dieselPump:document.getElementById('mtDieselPump').value,dieselBillNo:document.getElementById('mtDieselBillNo').value,
+        dieselLitres:+document.getElementById('mtDieselLitres').value||0,weightTons:+document.getElementById('mtWeightTons').value||0,
+        ratePerTon:+document.getElementById('mtRatePerTon').value||0,grossFreight:+document.getElementById('mtGrossFreight').value||0,
+        dieselAmt:+document.getElementById('mtDieselAmt').value||0,driverBhatta:+document.getElementById('mtDriverBhatta').value||0,
+        fastagAmt:+document.getElementById('mtFastagAmt').value||0,truckExp:+document.getElementById('mtTruckExp').value||0,
+        netAmount:+document.getElementById('mtNetAmount').value||0,docs:{...base64Cache}};
+        const save=async()=>{
+            const old=state.mtTrips.find(x=>x.id===r.id)||null;
+            const a=await supabaseClient.from('mt_trips').upsert(mtToRow(r));
+            if(a.error){cloudError("MT invoice save nahi hua.",a.error);return;}
+            const b=await supabaseClient.from('party_trips').upsert(partyFromMt(r));
+            if(b.error){cloudError("MT invoice save hua, Party Invoice sync nahi hua.",b.error);return;}
+            await writeAudit(id?"Edit MT Invoice":"Create MT Invoice",r.id,old,r);
+            await loadAllFromSupabase(false);resetMtForm();alert("✅ Transport Invoice Saved Successfully!");
+        };
+        if(id)requestEmployeeActionApproval("Edit Invoice",save);else await save();
+    }
+
+    async function deleteInvoice(id){
+        requestEmployeeActionApproval("Delete Invoice Entry",async()=>{
+            if(!confirm("Are you sure you want to permanently delete this Invoice?"))return;
+            const old=state.mtTrips.find(x=>x.id===id)||null;
+            const a=await supabaseClient.from('mt_trips').delete().eq('id',id);
+            if(a.error){cloudError("Invoice delete nahi hua.",a.error);return;}
+            await supabaseClient.from('party_trips').delete().eq('id',id);
+            await writeAudit("Delete MT Invoice",id,old,null);await loadAllFromSupabase(false);
+            alert("✅ Invoice deleted from Supabase!");
         });
     }
 
@@ -1158,33 +1207,89 @@ loadVehiclesFromSupabase();
     }
 
     // DRIVER & VEHICLE DELETE ENGINE
-    function commitDriverSave() {
+    async function loadDriversFromSupabase() {
+        const { data, error } = await supabaseClient
+            .from('drivers')
+            .select('*')
+            .order('id', { ascending: false });
+
+        if (error) {
+            console.error('Driver Load Error:', error);
+            return;
+        }
+
+        state.drivers = (data || []).map(d => ({
+            id: d.id,
+            name: d.name || '',
+            phone: d.phone || '',
+            dl: d.dl || '',
+            joinDate: d.joining_date || d.join_date || d.joindate || ''
+        }));
+
+        populateSelects();
+        renderDrivers();
+        console.log('Drivers from Supabase:', state.drivers);
+    }
+
+    async function commitDriverSave() {
         const id = document.getElementById('editDriverId').value;
         const d = {
             id: id ? parseInt(id) : Date.now(),
-            name: document.getElementById('drvNameInput').value,
-            phone: document.getElementById('drvPhoneInput').value,
-            dl: document.getElementById('drvDlInput').value,
+            name: document.getElementById('drvNameInput').value.trim(),
+            phone: document.getElementById('drvPhoneInput').value.trim(),
+            dl: document.getElementById('drvDlInput').value.trim(),
             joinDate: document.getElementById('drvDateInput').value
         };
-        const exec = () => {
-            if(id) {
-                const idx = state.drivers.findIndex(x => x.id === parseInt(id));
-                state.drivers[idx] = d;
-            } else state.drivers.unshift(d);
-            saveState(); populateSelects(); renderDrivers();
-            alert('Driver saved!');
+
+        if (!d.name) { alert('Please enter Driver Name.'); return; }
+
+        const saveToSupabase = async () => {
+            const { error } = await supabaseClient
+                .from('drivers')
+                .upsert({
+                    id: d.id,
+                    name: d.name,
+                    phone: d.phone,
+                    dl: d.dl,
+                    joining_date: d.joinDate || null
+                });
+
+            if (error) {
+                console.error('Driver Save Error:', error);
+                alert('❌ Driver save nahi hua:\n' + error.message);
+                return;
+            }
+
+            alert('✅ Driver Supabase mein save ho gaya!');
+            document.getElementById('editDriverId').value = '';
+            document.getElementById('drvNameInput').value = '';
+            document.getElementById('drvPhoneInput').value = '';
+            document.getElementById('drvDlInput').value = '';
+            document.getElementById('drvDateInput').value = '';
+            await loadDriversFromSupabase();
         };
-        if(id) requestEmployeeActionApproval("Edit Driver", exec); else exec();
+
+        if(id) requestEmployeeActionApproval('Edit Driver', saveToSupabase);
+        else await saveToSupabase();
     }
 
     function deleteDriver(id) {
-        requestEmployeeActionApproval("Delete Driver Record", () => {
-            if(confirm("Are you sure you want to delete this Driver?")) {
-                state.drivers = state.drivers.filter(d => d.id !== id);
-                saveState(); populateSelects(); renderDrivers();
-                alert("Driver Deleted!");
+        requestEmployeeActionApproval('Delete Driver Record', async () => {
+            if(!confirm('Are you sure you want to delete this Driver?')) return;
+
+            const { error } = await supabaseClient
+                .from('drivers')
+                .delete()
+                .eq('id', id);
+
+            if (error) {
+                console.error('Driver Delete Error:', error);
+                alert('❌ Driver delete nahi hua:\n' + error.message);
+                return;
             }
+
+            await loadDriversFromSupabase();
+            alert('✅ Driver deleted from Supabase!');
         });
     }
 
@@ -1237,13 +1342,13 @@ loadVehiclesFromSupabase();
 }
           
 
-    function deleteVehicle(id) {
-        requestEmployeeActionApproval("Delete Fleet Vehicle", () => {
-            if(confirm("Are you sure you want to delete this Vehicle?")) {
-                state.vehicles = state.vehicles.filter(v => v.id !== id);
-                saveState(); populateSelects(); renderVehicles();
-                alert("Vehicle Deleted!");
-            }
+    function deleteVehicle(id){
+        requestEmployeeActionApproval("Delete Fleet Vehicle",async()=>{
+            if(!confirm("Are you sure you want to delete this Vehicle?"))return;
+            const old=state.vehicles.find(v=>v.id===id)||null;
+            const a=await supabaseClient.from('vehicles').delete().eq('id',id);
+            if(a.error){cloudError("Vehicle delete nahi hua.",a.error);return;}
+            await writeAudit("Delete Vehicle",id,old,null);await loadAllFromSupabase(false);alert("✅ Vehicle deleted from Supabase!");
         });
     }
 
@@ -1503,19 +1608,14 @@ loadVehiclesFromSupabase();
     function renderPartyInvoices() {
         const tbody = document.getElementById('partyTableBody');
         tbody.innerHTML = '';
-        state.mtTrips.forEach(p => {
+        const partyRows=(state.partyTrips&&state.partyTrips.length)?state.partyTrips:state.mtTrips.map(partyFromMt);
+        partyRows.forEach(p => {
             tbody.innerHTML += `<tr>
-                <td>${p.tripDate}</td>
-                <td><b>${p.receiptNo}</b></td>
-                <td>${p.partyName}</td>
-                <td>${p.truckNo}</td>
-                <td>${p.weightTons} Ton</td>
-                <td>₹${p.ratePerTon}</td>
-                <td style="color:var(--emerald-accent); font-weight:700;">₹${p.grossFreight.toFixed(2)}</td>
-                <td>
-                    <button class="btn btn-primary btn-sm" onclick="previewInvoiceModal(${p.id}, 'party')"><i class="fa-solid fa-download"></i> Download / Print</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteInvoice(${p.id})"><i class="fa-solid fa-trash"></i> Delete</button>
-                </td>
+                <td>${p.pTripDate||''}</td><td><b>${p.pReceiptNo||''}</b></td><td>${p.pPartyName||''}</td>
+                <td>${p.pTruckNo||''}</td><td>${Number(p.pTotalTon||0)} Ton</td><td>₹${Number(p.pBhadaRate||0)}</td>
+                <td style="color:var(--emerald-accent);font-weight:700;">₹${Number(p.pTotalFreight||0).toFixed(2)}</td>
+                <td><button class="btn btn-primary btn-sm" onclick="previewInvoiceModal(${p.id}, 'party')"><i class="fa-solid fa-download"></i> Download / Print</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteInvoice(${p.id})"><i class="fa-solid fa-trash"></i> Delete</button></td>
             </tr>`;
         });
     }
@@ -1577,24 +1677,22 @@ loadVehiclesFromSupabase();
         </tr>`;
     }
 
-    function adminAddEmployee() {
-        const u = document.getElementById('newEmpUser').value.trim();
-        const p = document.getElementById('newEmpPassInput').value.trim();
-        if(u && p) {
-            state.employees.push({ id: Date.now(), username: u, role: 'employee' });
-            state.empPass = p;
-            saveState();
-            renderUserManagement();
-            alert(`Employee ${u} created!`);
-        } else { alert('Provide valid details!'); }
+    async function adminAddEmployee(){
+        const u=document.getElementById('newEmpUser').value.trim(),p=document.getElementById('newEmpPassInput').value.trim();
+        if(!u||!p){alert('Provide valid details!');return;}
+        const id=Date.now(),row={id,username:u,role:'employee'};
+        const a=await supabaseClient.from('employees').insert(row);
+        if(a.error){cloudError("Employee save nahi hua.",a.error);return;}
+        state.empPass=p;saveState();await writeAudit("Create Employee",id,null,row);await loadAllFromSupabase(false);
+        document.getElementById('newEmpUser').value='';document.getElementById('newEmpPassInput').value='';
+        alert(`✅ Employee ${u} Supabase mein create ho gaya!`);
     }
-
-    function deleteEmployee(id) {
-        if(confirm('Delete this Employee access?')) {
-            state.employees = state.employees.filter(e => e.id !== id);
-            saveState();
-            renderUserManagement();
-        }
+    async function deleteEmployee(id){
+        if(!confirm('Delete this Employee access?'))return;
+        const old=state.employees.find(e=>e.id===id)||null;
+        const a=await supabaseClient.from('employees').delete().eq('id',id);
+        if(a.error){cloudError("Employee delete nahi hua.",a.error);return;}
+        await writeAudit("Delete Employee",id,old,null);await loadAllFromSupabase(false);
     }
 
     function changeEmpPasswordPrompt() {
