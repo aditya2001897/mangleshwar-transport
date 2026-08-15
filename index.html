@@ -139,63 +139,224 @@
             .no-print { display: none !important; }
         }
     
-
-/* ===== MOBILE RESPONSIVE UI ===== */
-.mobile-menu-btn,.mobile-menu-overlay{display:none}
+/* ===== FINAL MOBILE USABILITY FIX ===== */
 @media (max-width: 768px) {
-  html, body { width:100%; max-width:100%; overflow-x:hidden; }
-  body { font-size:14px; }
-  #appShell { width:100%; min-width:0; height:100dvh; position:relative; overflow:hidden; }
-  .sidebar {
-    position:fixed; z-index:1000; left:0; top:0; bottom:0;
-    width:min(82vw,320px); max-width:320px;
-    transform:translateX(-105%); transition:transform .25s ease;
-    box-shadow:10px 0 30px rgba(0,0,0,.35);
-  }
-  #appShell.mobile-menu-open .sidebar { transform:translateX(0); }
-  .mobile-menu-overlay {
-    position:fixed; inset:0; z-index:999; display:block;
-    background:rgba(0,0,0,.55); opacity:0; pointer-events:none;
-    transition:opacity .25s ease;
-  }
-  #appShell.mobile-menu-open .mobile-menu-overlay { opacity:1; pointer-events:auto; }
-  .sidebar-brand { padding:18px 16px; font-size:14px; }
-  .sidebar-menu { padding:12px 8px; }
-  .sidebar-menu li a { padding:13px 14px; font-size:14px; }
-  .main-viewport { width:100%; min-width:0; overflow:hidden; }
-  .topbar {
-    height:58px; min-height:58px; padding:0 12px;
-    gap:8px; position:relative;
-  }
-  .topbar h3 { font-size:16px !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .user-badge { padding:5px 8px; gap:6px; font-size:12px; white-space:nowrap; }
-  .mobile-menu-btn {
-    display:flex; flex:0 0 40px; width:40px; height:40px;
-    align-items:center; justify-content:center; border:0; border-radius:10px;
-    background:rgba(255,255,255,.08); color:#fff; font-size:19px; cursor:pointer;
-  }
-  .content-body {
-    height:calc(100dvh - 58px); min-width:0; padding:14px;
-    overflow-x:hidden; overflow-y:auto;
-  }
-  .card { padding:15px; margin-bottom:14px; border-radius:10px; }
-  .grid-2,.grid-3,.grid-4 { grid-template-columns:1fr !important; gap:12px; }
-  .form-grid { grid-template-columns:1fr !important; }
-  input,select,textarea { max-width:100%; font-size:16px !important; }
-  button,.btn { min-height:42px; }
-  .btn-sm { min-height:38px; }
-  table { min-width:650px; font-size:12px; }
-  .table-container,.table-responsive { max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
-  .modal-content,.modal-box { width:calc(100vw - 24px) !important; max-width:none !important; margin:12px auto; }
-  .modal-overlay { padding:12px !important; }
-  .pdf-page { width:100% !important; max-width:100% !important; overflow:hidden; }
-  .invoice-meta-grid { grid-template-columns:1fr !important; }
-  .signature-block { gap:20px; flex-wrap:wrap; }
-  .sig-line { width:150px; }
-  .auth-card { width:calc(100vw - 28px) !important; max-width:420px; margin:14px; }
-}
-@media (min-width:769px) {
-  #appShell .mobile-menu-btn, #appShell .mobile-menu-overlay { display:none !important; }
+    html, body {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden !important;
+    }
+
+    #appShell {
+        width: 100%;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    .main-viewport {
+        width: 100%;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    .topbar {
+        height: 64px;
+        min-height: 64px;
+        padding: 0 12px !important;
+        gap: 8px;
+        overflow: hidden;
+    }
+
+    .topbar > div:first-child {
+        min-width: 0;
+        flex: 1 1 auto;
+        overflow: hidden;
+    }
+
+    .topbar h2 {
+        font-size: 18px !important;
+        line-height: 1.1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .user-badge {
+        flex: 0 0 auto;
+        max-width: 42vw;
+        padding: 6px 9px;
+        gap: 6px;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+
+    .user-badge span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .content-body {
+        width: 100%;
+        height: calc(100vh - 64px);
+        padding: 12px !important;
+        overflow-x: hidden !important;
+        overflow-y: auto;
+    }
+
+    .card {
+        width: 100%;
+        max-width: 100%;
+        padding: 16px !important;
+        margin-bottom: 14px;
+        overflow: hidden;
+    }
+
+    .grid-2, .grid-3, .grid-4 {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+
+    .form-control {
+        width: 100% !important;
+        min-width: 0 !important;
+        font-size: 16px !important;
+    }
+
+    .btn {
+        min-height: 44px;
+        font-size: 14px;
+    }
+
+    .btn-sm {
+        min-height: 38px;
+        padding: 7px 10px !important;
+        font-size: 12px !important;
+    }
+
+    /* Tables: keep them usable on narrow screens. */
+    .card table {
+        width: 100%;
+        table-layout: auto;
+    }
+
+    .card table th,
+    .card table td {
+        padding: 10px 8px;
+        font-size: 12px;
+        vertical-align: middle;
+    }
+
+    .card table td {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    /* The action column is always visible while the data can scroll. */
+    .card table th:last-child,
+    .card table td:last-child {
+        position: sticky;
+        right: 0;
+        z-index: 3;
+        background: var(--slate-900);
+        box-shadow: -8px 0 12px rgba(2,6,23,.65);
+        min-width: 116px;
+    }
+
+    .card table th:last-child {
+        background: #182235;
+    }
+
+    .card table td:last-child .btn {
+        margin: 2px 0;
+    }
+
+    /* Driver table: hide joining date so Edit/Delete remain visible. */
+    #driversPane table th:nth-child(4),
+    #driversPane table td:nth-child(4) {
+        display: none;
+    }
+
+    #driversPane table th:first-child,
+    #driversPane table td:first-child {
+        min-width: 100px;
+    }
+
+    #driversPane table th:nth-child(2),
+    #driversPane table td:nth-child(2) {
+        min-width: 105px;
+    }
+
+    #driversPane table th:nth-child(3),
+    #driversPane table td:nth-child(3) {
+        min-width: 105px;
+    }
+
+    /* Vehicle table: hide expiry columns on very small screens; actions stay visible. */
+    #vehiclesPane table th:nth-child(2),
+    #vehiclesPane table td:nth-child(2),
+    #vehiclesPane table th:nth-child(3),
+    #vehiclesPane table td:nth-child(3),
+    #vehiclesPane table th:nth-child(4),
+    #vehiclesPane table td:nth-child(4) {
+        display: none;
+    }
+
+    #vehiclesPane table th:first-child,
+    #vehiclesPane table td:first-child {
+        min-width: 125px;
+    }
+
+    /* Invoice tables: allow horizontal scrolling but keep action buttons pinned. */
+    #mtPane .card,
+    #partyPane .card,
+    #dashboardPane .card,
+    #reportsPane .card,
+    #usersPane .card,
+    #auditPane .card {
+        overflow-x: auto;
+    }
+
+    #mtPane table,
+    #partyPane table,
+    #dashboardPane table,
+    #reportsPane table,
+    #usersPane table,
+    #auditPane table {
+        min-width: 560px;
+    }
+
+    /* The card itself remains within the phone width. */
+    #mtPane .card,
+    #partyPane .card,
+    #dashboardPane .card,
+    #reportsPane .card,
+    #usersPane .card,
+    #auditPane .card {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Make file inputs fit without creating a wider page. */
+    input[type="file"] {
+        width: 100% !important;
+        max-width: 100% !important;
+        font-size: 14px;
+    }
+
+    /* Preview/download buttons stack cleanly. */
+    #pdfPreviewModal {
+        padding: 8px !important;
+    }
+
+    #pdfPreviewModal > div {
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+
+    /* Keep headings readable. */
+    .card h4 {
+        font-size: 17px !important;
+    }
 }
 
 </style>
@@ -1485,36 +1646,6 @@ loadVehiclesFromSupabase();
             </tr>`;
         });
     }
-</script>
-
-<script>
-(function(){
-  function setupMobileUI(){
-    const shell=document.getElementById('appShell');
-    const topbar=shell && shell.querySelector('.topbar');
-    const sidebar=shell && shell.querySelector('.sidebar');
-    if(!shell || !topbar || !sidebar || topbar.querySelector('.mobile-menu-btn')) return;
-    const btn=document.createElement('button');
-    btn.className='mobile-menu-btn';
-    btn.type='button';
-    btn.setAttribute('aria-label','Open menu');
-    btn.innerHTML='<i class="fa-solid fa-bars"></i>';
-    topbar.insertBefore(btn, topbar.firstChild);
-    const overlay=document.createElement('div');
-    overlay.className='mobile-menu-overlay';
-    shell.insertBefore(overlay,shell.firstChild);
-    const close=()=>shell.classList.remove('mobile-menu-open');
-    btn.addEventListener('click',()=>shell.classList.toggle('mobile-menu-open'));
-    overlay.addEventListener('click',close);
-    sidebar.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{
-      if(window.matchMedia('(max-width: 768px)').matches) close();
-    }));
-    window.addEventListener('resize',()=>{
-      if(!window.matchMedia('(max-width: 768px)').matches) close();
-    });
-  }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',setupMobileUI); else setupMobileUI();
-})();
 </script>
 </body>
 </html>	
