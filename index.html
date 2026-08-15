@@ -756,9 +756,6 @@ async function loadVehiclesFromSupabase() {
     console.log("Vehicles from Supabase:", data);
 }
 
-loadVehiclesFromSupabase();
-loadDriversFromSupabase();
-
     const Store = {
         get: (k, def) => JSON.parse(localStorage.getItem('MT_' + k)) || def,
         set: (k, v) => localStorage.setItem('MT_' + k, JSON.stringify(v))
@@ -927,13 +924,15 @@ loadDriversFromSupabase();
     });
 
     async function launchSystem(username,role){
+        // Authenticate first; do not block login just because one Supabase table has an RLS/load issue.
         state.user={username,role};
-        if(!await loadAllFromSupabase(true))return;
         document.getElementById('authOverlay').style.display='none';
         document.getElementById('appShell').style.display='flex';
         document.getElementById('activeUserLabel').innerText=`${username} (${role.toUpperCase()})`;
         if(role!=='admin')document.querySelectorAll('.admin-only').forEach(el=>el.style.display='none');
         populateSelects();renderDashboard();renderMtInvoices();renderPartyInvoices();renderDrivers();renderVehicles();renderUserManagement();renderAudits();recalcGst();
+        await loadAllFromSupabase(true);
+        recalcGst();
     }
 
     function nav(paneId, el) {
