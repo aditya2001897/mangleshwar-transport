@@ -139,223 +139,195 @@
             .no-print { display: none !important; }
         }
     
-/* ===== FINAL MOBILE USABILITY FIX ===== */
+/* ===== MOBILE UI v2: desktop untouched, phone gets a real mobile layout ===== */
 @media (max-width: 768px) {
     html, body {
-        width: 100%;
-        max-width: 100%;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
         overflow-x: hidden !important;
     }
 
     #appShell {
-        width: 100%;
-        min-width: 0;
-        overflow: hidden;
+        width: 100% !important;
+        min-width: 0 !important;
+        height: 100vh !important;
+        display: flex !important;
+        position: relative !important;
+        overflow: hidden !important;
+    }
+
+    /* Sidebar becomes an off-canvas menu instead of occupying 260px. */
+    #appShell > .sidebar {
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        width: 285px !important;
+        max-width: 84vw !important;
+        height: 100vh !important;
+        z-index: 2000 !important;
+        transform: translateX(-105%) !important;
+        transition: transform .22s ease !important;
+        box-shadow: 10px 0 30px rgba(0,0,0,.35) !important;
+    }
+
+    #appShell > .sidebar.mobile-open {
+        transform: translateX(0) !important;
+    }
+
+    #mobileMenuBackdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 1900;
+        background: rgba(0,0,0,.55);
+    }
+
+    #mobileMenuBackdrop.open {
+        display: block;
     }
 
     .main-viewport {
-        width: 100%;
-        min-width: 0;
-        overflow: hidden;
+        width: 100% !important;
+        min-width: 0 !important;
+        flex: 1 1 auto !important;
+        overflow: hidden !important;
     }
 
     .topbar {
-        height: 64px;
-        min-height: 64px;
-        padding: 0 12px !important;
-        gap: 8px;
-        overflow: hidden;
+        width: 100% !important;
+        height: 64px !important;
+        min-height: 64px !important;
+        padding: 0 10px !important;
+        gap: 8px !important;
+        justify-content: flex-start !important;
+        overflow: hidden !important;
     }
 
-    .topbar > div:first-child {
-        min-width: 0;
-        flex: 1 1 auto;
-        overflow: hidden;
+    #mobileMenuButton {
+        display: flex !important;
+        flex: 0 0 46px !important;
+        width: 46px !important;
+        height: 46px !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border: 1px solid rgba(255,255,255,.10) !important;
+        border-radius: 12px !important;
+        background: rgba(255,255,255,.06) !important;
+        color: #fff !important;
+        font-size: 20px !important;
+        cursor: pointer !important;
     }
 
-    .topbar h2 {
+    #paneTitle {
+        min-width: 0 !important;
+        flex: 1 1 auto !important;
+        max-width: 46vw !important;
         font-size: 18px !important;
-        line-height: 1.1;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
     }
 
     .user-badge {
-        flex: 0 0 auto;
-        max-width: 42vw;
-        padding: 6px 9px;
-        gap: 6px;
-        white-space: nowrap;
-        overflow: hidden;
+        flex: 0 0 auto !important;
+        max-width: 38vw !important;
+        padding: 6px 8px !important;
+        gap: 6px !important;
+        overflow: hidden !important;
     }
 
     .user-badge span {
-        overflow: hidden;
-        text-overflow: ellipsis;
+        max-width: 20vw !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
     }
 
     .content-body {
-        width: 100%;
-        height: calc(100vh - 64px);
+        width: 100% !important;
+        height: calc(100vh - 64px) !important;
         padding: 12px !important;
         overflow-x: hidden !important;
-        overflow-y: auto;
+        overflow-y: auto !important;
+    }
+
+    .tab-pane {
+        width: 100% !important;
+        min-width: 0 !important;
     }
 
     .card {
-        width: 100%;
-        max-width: 100%;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
         padding: 16px !important;
-        margin-bottom: 14px;
-        overflow: hidden;
+        margin-bottom: 14px !important;
     }
 
     .grid-2, .grid-3, .grid-4 {
         grid-template-columns: 1fr !important;
-        gap: 12px !important;
-    }
-
-    .form-control {
         width: 100% !important;
+    }
+
+    .form-control, select, textarea, input:not([type="checkbox"]):not([type="radio"]) {
+        max-width: 100% !important;
         min-width: 0 !important;
-        font-size: 16px !important;
     }
 
-    .btn {
-        min-height: 44px;
-        font-size: 14px;
+    /* Any wide table gets its own scroll area; it must never widen the page. */
+    .card:has(table) {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
     }
 
-    .btn-sm {
-        min-height: 38px;
-        padding: 7px 10px !important;
-        font-size: 12px !important;
+    table {
+        max-width: none !important;
     }
 
-    /* Tables: keep them usable on narrow screens. */
-    .card table {
-        width: 100%;
-        table-layout: auto;
+    /* Driver / vehicle actions remain reachable. */
+    #driversPane table,
+    #vehiclesPane table {
+        min-width: 600px !important;
     }
 
-    .card table th,
-    .card table td {
-        padding: 10px 8px;
-        font-size: 12px;
-        vertical-align: middle;
+    #driversPane table th:last-child,
+    #driversPane table td:last-child,
+    #vehiclesPane table th:last-child,
+    #vehiclesPane table td:last-child {
+        position: sticky !important;
+        right: 0 !important;
+        z-index: 5 !important;
+        background: var(--slate-900) !important;
+        box-shadow: -8px 0 12px rgba(2,6,23,.7) !important;
     }
 
-    .card table td {
-        overflow-wrap: anywhere;
-        word-break: break-word;
+    /* Invoice/action tables can scroll horizontally inside their card. */
+    #mtPane table, #partyPane table, #dashboardPane table,
+    #reportsPane table, #usersPane table, #auditPane table {
+        min-width: 650px !important;
     }
 
-    /* The action column is always visible while the data can scroll. */
-    .card table th:last-child,
-    .card table td:last-child {
-        position: sticky;
-        right: 0;
-        z-index: 3;
-        background: var(--slate-900);
-        box-shadow: -8px 0 12px rgba(2,6,23,.65);
-        min-width: 116px;
-    }
-
-    .card table th:last-child {
-        background: #182235;
-    }
-
-    .card table td:last-child .btn {
-        margin: 2px 0;
-    }
-
-    /* Driver table: hide joining date so Edit/Delete remain visible. */
-    #driversPane table th:nth-child(4),
-    #driversPane table td:nth-child(4) {
-        display: none;
-    }
-
-    #driversPane table th:first-child,
-    #driversPane table td:first-child {
-        min-width: 100px;
-    }
-
-    #driversPane table th:nth-child(2),
-    #driversPane table td:nth-child(2) {
-        min-width: 105px;
-    }
-
-    #driversPane table th:nth-child(3),
-    #driversPane table td:nth-child(3) {
-        min-width: 105px;
-    }
-
-    /* Vehicle table: hide expiry columns on very small screens; actions stay visible. */
-    #vehiclesPane table th:nth-child(2),
-    #vehiclesPane table td:nth-child(2),
-    #vehiclesPane table th:nth-child(3),
-    #vehiclesPane table td:nth-child(3),
-    #vehiclesPane table th:nth-child(4),
-    #vehiclesPane table td:nth-child(4) {
-        display: none;
-    }
-
-    #vehiclesPane table th:first-child,
-    #vehiclesPane table td:first-child {
-        min-width: 125px;
-    }
-
-    /* Invoice tables: allow horizontal scrolling but keep action buttons pinned. */
-    #mtPane .card,
-    #partyPane .card,
-    #dashboardPane .card,
-    #reportsPane .card,
-    #usersPane .card,
-    #auditPane .card {
-        overflow-x: auto;
-    }
-
-    #mtPane table,
-    #partyPane table,
-    #dashboardPane table,
-    #reportsPane table,
-    #usersPane table,
-    #auditPane table {
-        min-width: 560px;
-    }
-
-    /* The card itself remains within the phone width. */
-    #mtPane .card,
-    #partyPane .card,
-    #dashboardPane .card,
-    #reportsPane .card,
-    #usersPane .card,
-    #auditPane .card {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    /* Make file inputs fit without creating a wider page. */
+    /* File inputs stay inside the phone. */
     input[type="file"] {
         width: 100% !important;
         max-width: 100% !important;
-        font-size: 14px;
+        font-size: 14px !important;
     }
 
-    /* Preview/download buttons stack cleanly. */
-    #pdfPreviewModal {
-        padding: 8px !important;
+    .btn {
+        min-height: 42px !important;
     }
 
-    #pdfPreviewModal > div {
-        max-width: 100% !important;
-        width: 100% !important;
+    .btn-sm {
+        min-height: 36px !important;
     }
+}
 
-    /* Keep headings readable. */
-    .card h4 {
-        font-size: 17px !important;
+@media (min-width: 769px) {
+    #mobileMenuButton, #mobileMenuBackdrop {
+        display: none !important;
     }
 }
 
@@ -430,6 +402,7 @@
 
 <!-- APPLICATION SHELL -->
 <div id="appShell">
+    <div id="mobileMenuBackdrop" onclick="closeMobileMenu()"></div>
     <aside class="sidebar">
         <div class="sidebar-brand">
             <i class="fa-solid fa-shield-halved" style="color:var(--brand-accent);"></i> MANGLESHWAR ERP
@@ -450,6 +423,9 @@
 
     <main class="main-viewport">
         <header class="topbar">
+            <button id="mobileMenuButton" type="button" aria-label="Open menu" onclick="toggleMobileMenu()">
+                <i class="fa-solid fa-bars"></i>
+            </button>
             <h3 id="paneTitle" style="font-weight:700;">Executive Dashboard</h3>
             <div class="user-badge">
                 <i class="fa-solid fa-circle-user" style="color:var(--emerald-accent);"></i>
@@ -925,6 +901,27 @@ loadVehiclesFromSupabase();
         if(userEnteredKey === expectedKey) callback();
         else alert("Token Authorization Failed!");
     }
+
+    function toggleMobileMenu() {
+        const sidebar = document.querySelector('#appShell > .sidebar');
+        const backdrop = document.getElementById('mobileMenuBackdrop');
+        if (!sidebar) return;
+        const open = sidebar.classList.toggle('mobile-open');
+        if (backdrop) backdrop.classList.toggle('open', open);
+    }
+
+    function closeMobileMenu() {
+        const sidebar = document.querySelector('#appShell > .sidebar');
+        const backdrop = document.getElementById('mobileMenuBackdrop');
+        if (sidebar) sidebar.classList.remove('mobile-open');
+        if (backdrop) backdrop.classList.remove('open');
+    }
+
+
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('.sidebar-menu a');
+        if (link && window.innerWidth <= 768) closeMobileMenu();
+    });
 
     function launchSystem(username, role) {
         state.user = { username, role };
