@@ -1,0 +1,1836 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mangleshwar Transport | Complete Logistics & Billing Suite</title>
+    
+    <!-- Dependencies -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            --slate-950: #020617;
+            --slate-900: #0f172a;
+            --slate-800: #1e293b;
+            --slate-700: #334155;
+            --slate-600: #475569;
+            --slate-400: #94a3b8;
+            --slate-200: #e2e8f0;
+            --slate-100: #f1f5f9;
+            
+            --brand-primary: #2563eb;
+            --brand-accent: #3b82f6;
+            --brand-glow: rgba(37, 99, 235, 0.25);
+            --emerald-accent: #10b981;
+            --rose-accent: #ef4444;
+            --amber-accent: #f59e0b;
+            
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --card-radius: 12px;
+            --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 0; }
+        body { background-color: var(--slate-950); color: var(--slate-100); height: 100vh; overflow: hidden; font-size: 14px; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--slate-900); }
+        ::-webkit-scrollbar-thumb { background: var(--slate-700); border-radius: 4px; }
+
+        /* AUTH OVERLAY */
+        #authOverlay { position: fixed; inset: 0; background: radial-gradient(circle at top right, #1e1b4b, #020617); display: flex; align-items: center; justify-content: center; z-index: 99999; }
+        .auth-card { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); width: 440px; padding: 36px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+        .auth-brand { text-align: center; margin-bottom: 24px; }
+        .auth-brand i { font-size: 32px; background: linear-gradient(135deg, #60a5fa, #2563eb); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .auth-brand h2 { font-size: 20px; font-weight: 800; color: #fff; margin-top: 8px; }
+
+        .auth-tabs { display: flex; gap: 8px; background: rgba(255,255,255,0.03); padding: 4px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--glass-border); }
+        .auth-tab-btn { flex: 1; padding: 8px; border: none; background: transparent; color: var(--slate-400); font-size: 12px; font-weight: 600; cursor: pointer; border-radius: 6px; transition: var(--transition-smooth); }
+        .auth-tab-btn.active { background: var(--brand-primary); color: #fff; }
+
+        /* FORMS & INPUTS */
+        .form-group { margin-bottom: 16px; text-align: left; }
+        .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--slate-400); margin-bottom: 6px; }
+        .form-control { width: 100%; padding: 10px 14px; background: rgba(2, 6, 23, 0.6); border: 1px solid var(--slate-700); border-radius: 8px; color: #fff; font-size: 13px; transition: var(--transition-smooth); outline: none; }
+        .form-control:focus { border-color: var(--brand-accent); box-shadow: 0 0 0 3px var(--brand-glow); }
+
+        /* BUTTONS */
+        .btn { padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: var(--transition-smooth); text-decoration: none; }
+        .btn-primary { background: var(--brand-primary); color: #fff; }
+        .btn-primary:hover { background: var(--brand-accent); box-shadow: 0 0 15px var(--brand-glow); }
+        .btn-secondary { background: var(--slate-800); color: var(--slate-200); border: 1px solid var(--slate-700); }
+        .btn-secondary:hover { background: var(--slate-700); }
+        .btn-danger { background: var(--rose-accent); color: #fff; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-success { background: var(--emerald-accent); color: #fff; }
+        .btn-warning { background: var(--amber-accent); color: #000; }
+        .btn-block { width: 100%; }
+        .btn-sm { padding: 5px 10px; font-size: 11px; }
+
+        /* LAYOUT */
+        #appShell { display: flex; width: 100vw; height: 100vh; background: var(--slate-950); display: none; }
+        .sidebar { width: 260px; background: var(--slate-900); border-right: 1px solid var(--glass-border); display: flex; flex-direction: column; }
+        .sidebar-brand { padding: 24px; font-size: 15px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--glass-border); }
+        .sidebar-menu { list-style: none; padding: 16px 8px; flex: 1; overflow-y: auto; }
+        .sidebar-menu li a { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: var(--slate-400); border-radius: 8px; font-weight: 500; transition: var(--transition-smooth); text-decoration: none; }
+        .sidebar-menu li:hover a, .sidebar-menu li.active a { background: rgba(255,255,255,0.05); color: #fff; }
+        .sidebar-menu li.active a { background: var(--brand-primary); color: #fff; }
+
+        .main-viewport { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .topbar { height: 64px; background: var(--slate-900); border-bottom: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; }
+        .user-badge { display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.03); padding: 6px 12px; border-radius: 20px; border: 1px solid var(--glass-border); }
+        
+        .content-body { padding: 32px; overflow-y: auto; height: calc(100vh - 64px); background: radial-gradient(circle at top left, #0f172a, #020617); }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+
+        /* CARDS & TABLES */
+        .card { background: var(--slate-900); border: 1px solid var(--glass-border); border-radius: var(--card-radius); padding: 24px; margin-bottom: 24px; }
+        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+        th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--glass-border); }
+        th { background: rgba(255,255,255,0.02); font-weight: 600; color: var(--slate-400); text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+        td { color: var(--slate-200); }
+        tr:hover { background: rgba(255,255,255,0.01); }
+
+        .token-display { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; color: var(--brand-accent); background: rgba(37, 99, 235, 0.1); border: 1px dashed var(--brand-accent); padding: 12px; text-align: center; border-radius: 8px; margin: 12px 0; }
+
+        /* HIGH-ACCURACY PREVIEW MODAL & PRINT ENGINE */
+        #pdfPreviewModal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 999999; padding: 20px; }
+        .modal-body-pdf { background: #fff; width: 850px; max-height: 90vh; overflow-y: auto; border-radius: 8px; padding: 0; color: #000 !important; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); }
+
+        /* HIGH CONTRAST INVOICE STYLING */
+        .pdf-page { width: 100%; background: #ffffff !important; padding: 35px 40px; font-family: 'Arial', sans-serif; font-size: 12px; color: #000000 !important; box-sizing: border-box; page-break-after: always; }
+        .pdf-page * { color: #000000 !important; opacity: 1 !important; }
+        .invoice-header-title { font-size: 24px; font-weight: 900; letter-spacing: 0.5px; margin-bottom: 4px; color: #000 !important; }
+        .invoice-top-bar { display: flex; justify-content: space-between; border-bottom: 2px solid #000000; padding-bottom: 8px; margin-bottom: 14px; font-weight: 600; }
+        .invoice-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; border: 1px solid #000000; padding: 10px; background: #ffffff; }
+        .meta-item { line-height: 1.5; font-size: 12px; color: #000000 !important; }
+        .meta-item b { font-weight: 700; color: #000000 !important; }
+        
+        .invoice-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; background: #ffffff; }
+        .invoice-table th, .invoice-table td { border: 1px solid #000000 !important; padding: 9px 12px; text-align: left; color: #000000 !important; font-size: 12px; }
+        .invoice-table th { background: #f0f0f0 !important; font-weight: 800 !important; text-transform: none; }
+        .invoice-table td { background: #ffffff !important; font-weight: 600 !important; }
+        
+        .net-amount-card { background: #e2e8f0 !important; border: 1px solid #000000 !important; padding: 12px; font-size: 14px; font-weight: 900 !important; display: flex; justify-content: space-between; margin-bottom: 24px; color: #000000 !important; }
+        .signature-block { display: flex; justify-content: space-between; margin-top: 40px; padding-top: 10px; }
+        .sig-line { border-top: 1px dashed #000000; width: 200px; text-align: center; font-size: 11px; font-weight: 700; padding-top: 4px; }
+
+        .doc-attachment-page { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; min-height: 900px; }
+        .doc-attachment-page img { max-width: 100%; max-height: 750px; border: 1px solid #000; border-radius: 4px; object-fit: contain; margin-top: 15px; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #printableInvoiceArea, #printableInvoiceArea * { visibility: visible; }
+            #printableInvoiceArea { position: absolute; left: 0; top: 0; width: 100%; color: #000 !important; background: #fff !important; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- AUTHENTICATION OVERLAY -->
+<div id="authOverlay">
+    <div class="auth-card">
+        <div class="auth-brand">
+            <i class="fa-solid fa-truck-fast"></i>
+            <h2>Mangleshwar Transport</h2>
+            <p style="color: var(--slate-400); font-size: 12px; margin-top: 4px;">Enterprise Fleet & Logistics Suite</p>
+        </div>
+
+        <div class="auth-tabs">
+            <button class="auth-tab-btn active" onclick="setAuthTab('admin')"><i class="fa-solid fa-user-shield"></i> Admin Login</button>
+            <button class="auth-tab-btn" onclick="setAuthTab('employee')"><i class="fa-solid fa-users"></i> Staff Login</button>
+            <button class="auth-tab-btn" onclick="setAuthTab('forgot')"><i class="fa-solid fa-key"></i> Forgot Password</button>
+        </div>
+
+        <!-- ADMIN LOGIN FORM -->
+        <div id="formAdmin">
+            <div class="form-group"><label>Admin ID</label><input type="text" id="adminUser" class="form-control" value="admin"></div>
+            <div class="form-group"><label>Password</label><input type="password" id="adminPass" class="form-control" placeholder="••••••••"></div>
+            <button class="btn btn-primary btn-block" onclick="processAdminAuth()">Authenticate Admin</button>
+        </div>
+
+        <!-- EMPLOYEE TOKEN LOGIN FORM -->
+        <div id="formEmployee" style="display:none;">
+            <div id="empStep1">
+                <div class="form-group"><label>Employee Username</label><input type="text" id="empUser" class="form-control" placeholder="emp_01"></div>
+                <div class="form-group"><label>Password</label><input type="password" id="empPass" class="form-control" placeholder="••••••••"></div>
+                <button class="btn btn-primary btn-block" onclick="initEmployeeToken()">Generate Auth Request</button>
+            </div>
+            <div id="empStep2" style="display:none;">
+                <p style="font-size:11px; color:var(--slate-400);">Provide this Request Code to Admin to receive Key:</p>
+                <div class="token-display" id="dispEmpReqCode">REQ-0000</div>
+                <div class="form-group"><label>Activation Key</label><input type="text" id="empActivationKey" class="form-control" placeholder="KEY-XXXX"></div>
+                <button class="btn btn-success btn-block" onclick="verifyEmpToken()">Authorize Login</button>
+            </div>
+        </div>
+
+        <!-- FORGOT PASSWORD FLOW -->
+        <div id="formForgot" style="display:none;">
+            <div class="form-group">
+                <label>Account Category</label>
+                <select id="forgotType" class="form-control" onchange="toggleForgotView(this.value)">
+                    <option value="admin">Admin (Security Question)</option>
+                    <option value="employee">Employee (Admin Token Approval)</option>
+                </select>
+            </div>
+
+            <div id="forgotAdminSec">
+                <div class="form-group"><label>Security Question: What is your registered vehicle hub?</label><input type="text" id="secAnswer" class="form-control" placeholder="Answer (e.g. Gwalior)"></div>
+                <div class="form-group"><label>New Admin Password</label><input type="password" id="newAdminPass" class="form-control"></div>
+                <button class="btn btn-warning btn-block" onclick="resetAdminPassword()">Reset Admin Credentials</button>
+            </div>
+
+            <div id="forgotEmpSec" style="display:none;">
+                <p style="font-size:11px; color:var(--slate-400);">Generate reset request token for Admin approval:</p>
+                <button class="btn btn-secondary btn-block" style="margin-bottom:10px;" onclick="genResetToken()">Generate Reset Token</button>
+                <div class="token-display" id="dispResetReqCode">RST-0000</div>
+                <div class="form-group"><label>Admin Reset Authorization Key</label><input type="text" id="empResetAuthKey" class="form-control"></div>
+                <div class="form-group"><label>New Employee Password</label><input type="password" id="newEmpPass" class="form-control"></div>
+                <button class="btn btn-success btn-block" onclick="resetEmpPassword()">Update Password</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- APPLICATION SHELL -->
+<div id="appShell">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-shield-halved" style="color:var(--brand-accent);"></i> MANGLESHWAR ERP
+        </div>
+        <ul class="sidebar-menu">
+            <li class="active"><a href="#" onclick="nav('dash', this)"><i class="fa-solid fa-chart-line"></i> Dashboard</a></li>
+            <li><a href="#" onclick="nav('billMt', this)"><i class="fa-solid fa-file-invoice-dollar"></i> Unified Invoice Entry</a></li>
+            <li><a href="#" onclick="nav('gstBill', this)"><i class="fa-solid fa-receipt"></i> GST Billing</a></li>
+            <li><a href="#" onclick="nav('letterhead', this)"><i class="fa-solid fa-file-signature"></i> Letter Head Generator</a></li>
+            <li><a href="#" onclick="nav('billParty', this)"><i class="fa-solid fa-file-invoice"></i> Party Billing Directory</a></li>
+            <li><a href="#" onclick="nav('reports', this)"><i class="fa-solid fa-chart-pie"></i> Financial Reports</a></li>
+            <li><a href="#" onclick="nav('drivers', this)"><i class="fa-solid fa-id-card"></i> Driver Registry</a></li>
+            <li><a href="#" onclick="nav('vehicles', this)"><i class="fa-solid fa-truck-front"></i> Fleet Registry</a></li>
+            <li class="admin-only"><a href="#" onclick="nav('users', this)"><i class="fa-solid fa-users-gear"></i> User Management</a></li>
+            <li class="admin-only"><a href="#" onclick="nav('audit', this)"><i class="fa-solid fa-receipt"></i> System Audit Trail</a></li>
+        </ul>
+    </aside>
+
+    <main class="main-viewport">
+        <header class="topbar">
+            <h3 id="paneTitle" style="font-weight:700;">Executive Dashboard</h3>
+            <div class="user-badge">
+                <i class="fa-solid fa-circle-user" style="color:var(--emerald-accent);"></i>
+                <span id="activeUserLabel" style="font-weight:600; font-size:12px;">Admin</span>
+                <button class="btn btn-danger btn-sm" onclick="location.reload()"><i class="fa-solid fa-power-off"></i></button>
+            </div>
+        </header>
+
+        <section class="content-body">
+            
+            <!-- PANE 1: DASHBOARD -->
+            <div id="dashPane" class="tab-pane active">
+                <div class="grid-4">
+                    <div class="card">
+                        <span style="color:var(--slate-400); font-size:11px; font-weight:700;">TOTAL GROSS FREIGHT</span>
+                        <h2 id="dashTotalFreight" style="color:#fff; font-weight:800; margin-top:4px;">₹0.00</h2>
+                    </div>
+                    <div class="card">
+                        <span style="color:var(--slate-400); font-size:11px; font-weight:700;">DIESEL DEDUCTIONS</span>
+                        <h2 id="dashTotalDiesel" style="color:var(--amber-accent); font-weight:800; margin-top:4px;">₹0.00</h2>
+                    </div>
+                    <div class="card">
+                        <span style="color:var(--slate-400); font-size:11px; font-weight:700;">TOTAL EXPENSES</span>
+                        <h2 id="dashTotalExp" style="color:var(--rose-accent); font-weight:800; margin-top:4px;">₹0.00</h2>
+                    </div>
+                    <div class="card">
+                        <span style="color:var(--slate-400); font-size:11px; font-weight:700;">NET PROFIT / REVENUE</span>
+                        <h2 id="dashNetProfit" style="color:var(--emerald-accent); font-weight:800; margin-top:4px;">₹0.00</h2>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h4 style="font-weight:700; margin-bottom:16px;">Recent Transport Invoices</h4>
+                    <table>
+                        <thead>
+                            <tr><th>Date</th><th>Receipt No</th><th>Truck No</th><th>Party Name</th><th>Gross Freight</th><th>Net Freight</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody id="dashTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- PANE 2: UNIFIED BILLING FORM (MT + PARTY DATA & 4 DOC UPLOADS) -->
+            <div id="billMtPane" class="tab-pane">
+                <div class="card">
+                    <h4 style="font-weight:700; margin-bottom:16px;" id="mtFormTitle">Master Invoice Entry (All Details & Documents Upload)</h4>
+                    <form id="mtInvoiceForm">
+                        <input type="hidden" id="editMtId" value="">
+                        <div class="grid-4">
+                            <div class="form-group"><label>Receipt No</label><input type="text" id="mtReceiptNo" class="form-control" placeholder="2610704726"></div>
+                            <div class="form-group"><label>Date</label><input type="date" id="mtTripDate" class="form-control"></div>
+                            <div class="form-group"><label>Payment Mode</label><input type="text" id="mtPaymentMode" class="form-control" value="Credit / Udhaar"></div>
+                            <div class="form-group"><label>Truck Number</label><select id="mtTruckNo" class="form-control"></select></div>
+                        </div>
+
+                        <div class="grid-4">
+                            <div class="form-group"><label>Party Name</label><input type="text" id="mtPartyName" class="form-control"></div>
+                            <div class="form-group"><label>Mineral Type</label><input type="text" id="mtMineralType" class="form-control" value="GSB Crusher"></div>
+                            <div class="form-group"><label>Crusher Name</label><input type="text" id="mtCrusherName" class="form-control"></div>
+                            <div class="form-group"><label>Royalty No</label><input type="text" id="mtRoyaltyNo" class="form-control"></div>
+                        </div>
+
+                        <div class="grid-4">
+                            <div class="form-group"><label>Driver Details</label><select id="mtDriverName" class="form-control"></select></div>
+                            <div class="form-group"><label>Diesel Pump Name</label><input type="text" id="mtDieselPump" class="form-control"></div>
+                            <div class="form-group"><label>Diesel Bill No</label><input type="text" id="mtDieselBillNo" class="form-control"></div>
+                            <div class="form-group"><label>Diesel Qty (Litres)</label><input type="number" step="0.01" id="mtDieselLitres" class="form-control"></div>
+                        </div>
+
+                        <div class="grid-4" style="background:rgba(255,255,255,0.02); padding:16px; border-radius:8px; margin-bottom:16px;">
+                            <div class="form-group"><label>Weight (Tons)</label><input type="number" step="0.001" id="mtWeightTons" class="form-control" oninput="recalcMtMath()"></div>
+                            <div class="form-group"><label>Rate / Ton (₹)</label><input type="number" step="0.01" id="mtRatePerTon" class="form-control" oninput="recalcMtMath()"></div>
+                            <div class="form-group"><label>Gross Freight (₹)</label><input type="number" step="0.01" id="mtGrossFreight" class="form-control" readonly></div>
+                            <div class="form-group"><label>Diesel Deduction (₹)</label><input type="number" step="0.01" id="mtDieselAmt" class="form-control" oninput="recalcMtMath()"></div>
+                        </div>
+
+                        <div class="grid-4" style="background:rgba(255,255,255,0.02); padding:16px; border-radius:8px; margin-bottom:16px;">
+                            <div class="form-group"><label>Driver Bhatta (₹)</label><input type="number" step="0.01" id="mtDriverBhatta" class="form-control" oninput="recalcMtMath()"></div>
+                            <div class="form-group"><label>Fastag Amount (₹)</label><input type="number" step="0.01" id="mtFastagAmt" class="form-control" oninput="recalcMtMath()"></div>
+                            <div class="form-group"><label>Truck Expenses (₹)</label><input type="number" step="0.01" id="mtTruckExp" class="form-control" oninput="recalcMtMath()"></div>
+                            <div class="form-group"><label>Final Net Amount (₹)</label><input type="number" step="0.01" id="mtNetAmount" class="form-control" readonly style="color:var(--emerald-accent); font-weight:800;"></div>
+                        </div>
+
+                        <!-- 4 DOCUMENT UPLOADS SECTION -->
+                        <h5 style="color:var(--brand-accent); font-weight:700; margin-bottom:12px;"><i class="fa-solid fa-paperclip"></i> Upload Original Receipt Documents (Will Print on Separate Pages)</h5>
+                        <div class="grid-4" style="background:rgba(37,99,235,0.05); padding:16px; border:1px dashed var(--brand-accent); border-radius:8px; margin-bottom:16px;">
+                            <div class="form-group"><label>1. Diesel Receipt</label><input type="file" id="docDiesel" class="form-control" accept="image/*" onchange="processImageUpload(this, 'docDieselBase64')"></div>
+                            <div class="form-group"><label>2. Bill</label><input type="file" id="docBill" class="form-control" accept="image/*" onchange="processImageUpload(this, 'docBillBase64')"></div>
+                            <div class="form-group"><label>3. Crusher Bill</label><input type="file" id="docCrusher" class="form-control" accept="image/*" onchange="processImageUpload(this, 'docCrusherBase64')"></div>
+                            <div class="form-group"><label>4. Other Document</label><input type="file" id="docOther" class="form-control" accept="image/*" onchange="processImageUpload(this, 'docOtherBase64')"></div>
+                        </div>
+
+                        <div style="display:flex; gap:12px;">
+                            <button type="button" class="btn btn-success" onclick="commitMtSave()"><i class="fa-solid fa-floppy-disk"></i> Save Invoice Entry</button>
+                            <button type="button" class="btn btn-secondary" onclick="resetMtForm()">Clear Form</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h4 style="font-weight:700; margin-bottom:16px;">Invoices Directory</h4>
+                    <table>
+                        <thead>
+                            <tr><th>Receipt No</th><th>Date</th><th>Truck</th><th>Party</th><th>Net Freight</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody id="mtTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- PANE: GST BILLING -->
+            <div id="gstBillPane" class="tab-pane">
+                <div class="card">
+                    <h4 style="font-weight:700; margin-bottom:16px;">Create Tax Invoice (GST Billing)</h4>
+                    <div class="grid-4">
+                        <div class="form-group"><label>Invoice Number</label><input type="text" id="gstInvNo" class="form-control" value="GST-2026-001"></div>
+                        <div class="form-group"><label>Invoice Date</label><input type="date" id="gstDate" class="form-control"></div>
+                        <div class="form-group"><label>Party Name</label><input type="text" id="gstPartyName" class="form-control"></div>
+                        <div class="form-group"><label>Party GSTIN</label><input type="text" id="gstPartyGstin" class="form-control" placeholder="23AAAAA0000A1Z5"></div>
+                    </div>
+                    <div class="grid-4">
+                        <div class="form-group"><label>Item / Service Description</label><input type="text" id="gstDesc" class="form-control" value="Transportation Services"></div>
+                        <div class="form-group"><label>HSN / SAC Code</label><input type="text" id="gstHsn" class="form-control" value="996511"></div>
+                        <div class="form-group"><label>Taxable Amount (₹)</label><input type="number" id="gstTaxable" class="form-control" value="50000" oninput="recalcGst()"></div>
+                        <div class="form-group"><label>GST Rate (%)</label>
+                            <select id="gstRate" class="form-control" onchange="recalcGst()">
+                                <option value="5">5% (Transport Standard)</option>
+                                <option value="12">12%</option>
+                                <option value="18">18%</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid-3" style="background:rgba(255,255,255,0.02); padding:16px; border-radius:8px; margin-bottom:16px;">
+                        <div class="form-group"><label>CGST (₹)</label><input type="text" id="gstCgst" class="form-control" readonly></div>
+                        <div class="form-group"><label>SGST (₹)</label><input type="text" id="gstSgst" class="form-control" readonly></div>
+                        <div class="form-group"><label>Total Bill Amount (₹)</label><input type="text" id="gstTotal" class="form-control" readonly style="color:var(--emerald-accent); font-weight:800;"></div>
+                    </div>
+                    <button class="btn btn-primary" onclick="previewGstInvoice()"><i class="fa-solid fa-file-pdf"></i> Preview & Print GST Invoice</button>
+                </div>
+            </div>
+
+            <!-- PANE: LETTERHEAD GENERATOR -->
+            <div id="letterheadPane" class="tab-pane">
+                <div class="card">
+                    <h4 style="font-weight:700; margin-bottom:16px;">Official Letterhead Generator</h4>
+                    <div class="grid-2">
+                        <div class="form-group"><label>Letter Reference No.</label><input type="text" id="lhRefNo" class="form-control" value="MT/REF/2026/089"></div>
+                        <div class="form-group"><label>Date</label><input type="date" id="lhDate" class="form-control"></div>
+                    </div>
+                    <div class="form-group"><label>Subject</label><input type="text" id="lhSubject" class="form-control" placeholder="To Whomsoever It May Concern / Quotation / Notice"></div>
+                    <div class="form-group"><label>Letter Content Body</label><textarea id="lhBody" class="form-control" rows="8" placeholder="Type letter text here..."></textarea></div>
+                    <button class="btn btn-success" onclick="previewLetterhead()"><i class="fa-solid fa-print"></i> Generate Letterhead PDF</button>
+                </div>
+            </div>
+
+            <!-- PANE 3: PARTY BILLING DIRECTORY -->
+            <div id="billPartyPane" class="tab-pane">
+                <div class="card">
+                    <h4 style="font-weight:700; margin-bottom:16px;">Party Billing Directory</h4>
+                    <table>
+                        <thead>
+                            <tr><th>Date</th><th>Receipt No</th><th>Party Name</th><th>Truck No</th><th>Mineral Qty</th><th>Rate/Ton</th><th>Total Freight</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody id="partyTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- PANE 4: FINANCIAL REPORTS -->
+            <div id="reportsPane" class="tab-pane">
+                <div class="card">
+                    <h4 style="font-weight:700; margin-bottom:16px;"><i class="fa-solid fa-chart-pie"></i> Transport Financial Reports Engine</h4>
+                    <div class="grid-3">
+                        <div class="form-group"><label>Start Date</label><input type="date" id="repStartDate" class="form-control"></div>
+                        <div class="form-group"><label>End Date</label><input type="date" id="repEndDate" class="form-control"></div>
+                        <div class="form-group"><label>Filter Party</label><input type="text" id="repPartyFilter" class="form-control" placeholder="All Parties"></div>
+                    </div>
+                    <button class="btn btn-primary" onclick="generateReport()"><i class="fa-solid fa-filter"></i> Run Consolidated Report</button>
+                </div>
+
+                <div class="card" id="reportResultCard" style="display:none;">
+                    <h4 style="font-weight:700; margin-bottom:16px;" id="reportTitle">Report Output</h4>
+                    <table>
+                        <thead>
+                            <tr><th>Category</th><th>Total Trips</th><th>Total Tonage</th><th>Total Diesel Exp</th><th>Total Gross Revenue</th><th>Net Profit</th></tr>
+                        </thead>
+                        <tbody id="reportTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- PANE 5: DRIVERS -->
+            <div id="driversPane" class="tab-pane">
+                <div class="card">
+                    <h4 style="font-weight:700; margin-bottom:16px;" id="driverFormTitle">Register / Edit Driver</h4>
+                    <input type="hidden" id="editDriverId" value="">
+                    <div class="grid-4">
+                        <div class="form-group"><label>Full Name</label><input type="text" id="drvNameInput" class="form-control"></div>
+                        <div class="form-group"><label>Mobile Phone</label><input type="text" id="drvPhoneInput" class="form-control"></div>
+                        <div class="form-group"><label>DL Number</label><input type="text" id="drvDlInput" class="form-control"></div>
+                        <div class="form-group"><label>Joining Date</label><input type="date" id="drvDateInput" class="form-control"></div>
+                    </div>
+                    <button class="btn btn-success" onclick="commitDriverSave()"><i class="fa-solid fa-floppy-disk"></i> Save Driver Record</button>
+                </div>
+
+                <div class="card">
+                    <h4 style="font-weight:700; margin-bottom:16px;">Active Drivers</h4>
+                    <table>
+                        <thead><tr><th>Name</th><th>Mobile</th><th>DL No</th><th>Joined</th><th>Actions</th></tr></thead>
+                        <tbody id="driverTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- PANE 6: VEHICLES -->
+            <div id="vehiclesPane" class="tab-pane">
+                <div class="card">
+                    <h4 style="font-weight:700; margin-bottom:16px;" id="vehicleFormTitle">Register / Edit Vehicle</h4>
+                    <input type="hidden" id="editVehicleId" value="">
+                    <div class="grid-4">
+                        <div class="form-group"><label>Truck Number</label><input type="text" id="vNoInput" class="form-control" placeholder="MP07 ZQ 8699"></div>
+                        <div class="form-group"><label>Insurance Expiry</label><input type="date" id="vInsInput" class="form-control"></div>
+                        <div class="form-group"><label>Fitness Expiry</label><input type="date" id="vFitInput" class="form-control"></div>
+                        <div class="form-group"><label>Permit Expiry</label><input type="date" id="vPermInput" class="form-control"></div>
+                    </div>
+                    <button class="btn btn-success" onclick="commitVehicleSave()"><i class="fa-solid fa-floppy-disk"></i> Save Fleet Vehicle</button>
+                </div>
+
+                <div class="card">
+                    <h4 style="font-weight:700; margin-bottom:16px;">Registered Fleet</h4>
+                    <table>
+                        <thead><tr><th>Truck Number</th><th>Insurance Exp</th><th>Fitness Exp</th><th>Permit Exp</th><th>Actions</th></tr></thead>
+                        <tbody id="vehicleTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- PANE 7: USER MANAGEMENT -->
+            <div id="usersPane" class="tab-pane admin-only">
+                <div class="grid-2">
+                    <div class="card">
+                        <h4 style="font-weight:700; margin-bottom:16px;">Add New Employee</h4>
+                        <div class="form-group"><label>Username</label><input type="text" id="newEmpUser" class="form-control"></div>
+                        <div class="form-group"><label>Initial Password</label><input type="password" id="newEmpPassInput" class="form-control"></div>
+                        <button class="btn btn-success btn-block" onclick="adminAddEmployee()">Add Employee</button>
+                    </div>
+
+                    <div class="card">
+                        <h4 style="font-weight:700; margin-bottom:16px;">Employee Token Generator</h4>
+                        <div class="form-group"><label>Employee Request Code</label><input type="text" id="adminReqKeyInput" class="form-control" placeholder="REQ-XXXX or RST-XXXX"></div>
+                        <button class="btn btn-primary btn-block" onclick="adminGenerateActivationKey()">Generate Master Authorization Key</button>
+                        <div class="token-display" id="adminGeneratedKey">KEY-XXXX</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h4 style="font-weight:700; margin-bottom:16px;">Employee User Directory & Access Management</h4>
+                    <table>
+                        <thead>
+                            <tr><th>Username</th><th>Role</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody id="userListTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- PANE 8: SYSTEM AUDIT TRAIL -->
+            <div id="auditPane" class="tab-pane admin-only">
+                <div class="card">
+                    <h4 style="font-weight:700; margin-bottom:16px;">System Audit Trail</h4>
+                    <table>
+                        <thead>
+                            <tr><th>Timestamp</th><th>User</th><th>Action Type</th><th>Entity ID</th><th>Before Change</th><th>After Change</th></tr>
+                        </thead>
+                        <tbody id="auditTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+    </main>
+</div>
+
+<!-- PRINT PREVIEW & PDF MODAL -->
+<div id="pdfPreviewModal">
+    <div class="modal-body-pdf">
+        <div class="no-print" style="background:#0f172a; padding:12px 20px; display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="color:#fff; font-weight:700;"><i class="fa-solid fa-file-pdf"></i> Document Preview</span>
+                <select id="printModeSelect" onchange="renderPreviewContent()" style="padding:4px 8px; border-radius:4px; font-weight:600;">
+                    <option value="mt">Print Format: MT (Full Breakdown + Attached Docs)</option>
+                    <option value="party">Print Format: Party (11 Fields Only)</option>
+                </select>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-success btn-sm" onclick="exportInvoicePDF()"><i class="fa-solid fa-download"></i> Save as PDF</button>
+                <button class="btn btn-primary btn-sm" onclick="window.print()"><i class="fa-solid fa-print"></i> Print PDF</button>
+                <button class="btn btn-danger btn-sm" onclick="closePreviewModal()">Close</button>
+            </div>
+        </div>
+
+        <div id="printableInvoiceArea">
+            <!-- DYNAMIC PREVIEW CONTENT -->
+        </div>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = "https://nlmehauytiavtppvtwlo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_HOb0rlh1TxDhTd7eNt7GVA_RaPooYCX";
+
+    const supabaseClient = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+    function cloudError(context, error) {
+        console.error(context, error);
+        alert("❌ " + context + "\n" + (error?.message || error));
+    }
+
+    function mapVehicle(v) {
+        return {
+            id: v.id,
+            vNo: v.v_no || '',
+            ins: v.insurance_expiry || '',
+            fit: v.fitness_expiry || '',
+            perm: v.permit_expiry || ''
+        };
+    }
+
+    function mapDriver(d) {
+        return {
+            id: d.id,
+            name: d.name || '',
+            phone: d.phone || '',
+            dl: d.dl || '',
+            joinDate: d.join_date || ''
+        };
+    }
+
+    function mapMtTrip(t) {
+        return {
+            id: t.id,
+            receiptNo: t.receipt_no || '',
+            tripDate: t.trip_date || '',
+            paymentMode: t.payment_mode || '',
+            truckNo: t.truck_no || '',
+            partyName: t.party_name || '',
+            mineralType: t.mineral_type || '',
+            crusherName: t.crusher_name || '',
+            royaltyNo: t.royalty_no || '',
+            driverName: t.driver_name || '',
+            dieselPump: t.diesel_pump || '',
+            dieselBillNo: t.diesel_bill_no || '',
+            dieselLitres: Number(t.diesel_litres) || 0,
+            weightTons: Number(t.weight_tons) || 0,
+            ratePerTon: Number(t.rate_per_ton) || 0,
+            grossFreight: Number(t.gross_freight) || 0,
+            dieselAmt: Number(t.diesel_amt) || 0,
+            driverBhatta: Number(t.driver_bhatta) || 0,
+            fastagAmt: Number(t.fastag_amt) || 0,
+            truckExp: Number(t.truck_exp) || 0,
+            netAmount: Number(t.net_amount) || 0,
+            docs: t.docs || {}
+        };
+    }
+
+    function mapPartyTrip(p) {
+        return {
+            id: p.id,
+            pTripDate: p.p_trip_date || '',
+            pTruckNo: p.p_truck_no || '',
+            pPartyName: p.p_party_name || '',
+            pMineralType: p.p_mineral_type || '',
+            pReceiptNo: p.p_receipt_no || '',
+            pCrusherName: p.p_crusher_name || '',
+            pDieselQty: Number(p.p_diesel_qty) || 0,
+            pDieselAmt: Number(p.p_diesel_amt) || 0,
+            pTotalTon: Number(p.p_total_ton) || 0,
+            pBhadaRate: Number(p.p_bhada_rate) || 0,
+            pTotalFreight: Number(p.p_total_freight) || 0
+        };
+    }
+
+    async function loadAllFromSupabase(showErrors = true) {
+        try {
+            const [
+                employeesRes,
+                mtRes,
+                partyRes,
+                driversRes,
+                vehiclesRes,
+                auditsRes
+            ] = await Promise.all([
+                supabaseClient.from('employees').select('*').order('id', { ascending: true }),
+                supabaseClient.from('mt_trips').select('*').order('id', { ascending: false }),
+                supabaseClient.from('party_trips').select('*').order('id', { ascending: false }),
+                supabaseClient.from('drivers').select('*').order('id', { ascending: true }),
+                supabaseClient.from('vehicles').select('*').order('id', { ascending: true }),
+                supabaseClient.from('audit_logs').select('*').order('id', { ascending: false })
+            ]);
+
+            const responses = [
+                ['Employees', employeesRes],
+                ['MT invoices', mtRes],
+                ['Party invoices', partyRes],
+                ['Drivers', driversRes],
+                ['Vehicles', vehiclesRes],
+                ['Audit logs', auditsRes]
+            ];
+
+            const failed = responses.find(([, r]) => r.error);
+            if (failed) {
+                if (showErrors) cloudError("Supabase data load failed: " + failed[0], failed[1].error);
+                return false;
+            }
+
+            state.employees = (employeesRes.data || []).map(e => ({
+                id: e.id,
+                username: e.username || '',
+                role: e.role || 'employee'
+            }));
+            state.mtTrips = (mtRes.data || []).map(mapMtTrip);
+            state.partyTrips = (partyRes.data || []).map(mapPartyTrip);
+            state.drivers = (driversRes.data || []).map(mapDriver);
+            state.vehicles = (vehiclesRes.data || []).map(mapVehicle);
+            state.audits = (auditsRes.data || []).map(a => ({
+                id: a.id,
+                timestamp: a.timestamp || a.created_at || '',
+                user: a.user || '',
+                type: a.action_type || a.type || '',
+                entityId: a.entity_id ?? '',
+                before: a.before_change ?? a.before ?? '',
+                after: a.after_change ?? a.after ?? ''
+            }));
+
+            return true;
+        } catch (err) {
+            if (showErrors) cloudError("Supabase connection/data load failed.", err);
+            return false;
+        }
+    }
+
+    async function writeAudit(type, entityId, beforeValue, afterValue) {
+        const row = {
+            id: Date.now(),
+            timestamp: new Date().toISOString(),
+            user: state.user?.username || 'system',
+            action_type: type,
+            entity_id: String(entityId ?? ''),
+            before_change: JSON.stringify(beforeValue ?? null),
+            after_change: JSON.stringify(afterValue ?? null)
+        };
+
+        const { data, error } = await supabaseClient
+            .from('audit_logs')
+            .insert(row)
+            .select()
+            .single();
+
+        if (error) {
+            console.error("Audit log error:", error);
+            return;
+        }
+
+        if (data) {
+            state.audits.unshift({
+                id: data.id,
+                timestamp: data.timestamp || row.timestamp,
+                user: data.user || row.user,
+                type: data.action_type || row.action_type,
+                entityId: data.entity_id || row.entity_id,
+                before: data.before_change || row.before_change,
+                after: data.after_change || row.after_change
+            });
+        }
+    }
+
+    async function loadVehiclesFromSupabase() {
+        const { data, error } = await supabaseClient
+            .from('vehicles')
+            .select('*')
+            .order('id', { ascending: true });
+
+        if (error) {
+            cloudError("Vehicle data load nahi hua.", error);
+            return;
+        }
+
+        state.vehicles = (data || []).map(mapVehicle);
+        populateSelects();
+        renderVehicles();
+    }
+
+const Store = {
+        get: (k, def) => JSON.parse(localStorage.getItem('MT_' + k)) || def,
+        set: (k, v) => localStorage.setItem('MT_' + k, JSON.stringify(v))
+    };
+
+    let base64Cache = { docDiesel: '', docBill: '', docCrusher: '', docOther: '' };
+    let currentPreviewId = null;
+    let state = {
+        user: null,
+        employees: [],
+        mtTrips: [],
+        partyTrips: [],
+        drivers: [],
+        vehicles: [],
+        audits: [],
+        adminPass: localStorage.getItem('MT_adminPass') || 'admin123',
+        empPass: localStorage.getItem('MT_empPass') || 'emp123'
+    };
+
+    // Local storage is now used ONLY for the existing local login passwords.
+    // Business records are stored in Supabase so the same data works on every device.
+    function saveState() {
+        localStorage.setItem('MT_adminPass', state.adminPass);
+        localStorage.setItem('MT_empPass', state.empPass);
+    }
+
+    function processImageUpload(input, targetVar) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                if(targetVar === 'docDieselBase64') base64Cache.docDiesel = e.target.result;
+                if(targetVar === 'docBillBase64') base64Cache.docBill = e.target.result;
+                if(targetVar === 'docCrusherBase64') base64Cache.docCrusher = e.target.result;
+                if(targetVar === 'docOtherBase64') base64Cache.docOther = e.target.result;
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    // AUTH ENGINE
+    function setAuthTab(tab) {
+        document.querySelectorAll('.auth-tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('formAdmin').style.display = 'none';
+        document.getElementById('formEmployee').style.display = 'none';
+        document.getElementById('formForgot').style.display = 'none';
+
+        if(tab === 'admin') {
+            document.querySelectorAll('.auth-tab-btn')[0].classList.add('active');
+            document.getElementById('formAdmin').style.display = 'block';
+        } else if(tab === 'employee') {
+            document.querySelectorAll('.auth-tab-btn')[1].classList.add('active');
+            document.getElementById('formEmployee').style.display = 'block';
+        } else {
+            document.querySelectorAll('.auth-tab-btn')[2].classList.add('active');
+            document.getElementById('formForgot').style.display = 'block';
+        }
+    }
+
+    function processAdminAuth() {
+        const u = document.getElementById('adminUser').value.trim();
+        const p = document.getElementById('adminPass').value.trim();
+        if(u === 'admin' && p === state.adminPass) {
+            launchSystem('Admin', 'admin');
+        } else { alert('Invalid Admin Credentials!'); }
+    }
+
+    let tempEmpReq = "";
+    async function initEmployeeToken() {
+        const loaded = await loadAllFromSupabase(true);
+        if(!loaded) return;
+
+        const u = document.getElementById('empUser').value.trim();
+        const p = document.getElementById('empPass').value.trim();
+        const empExists = state.employees.some(e => e.username === u);
+
+        if(empExists && p === state.empPass) {
+            tempEmpReq = "REQ-" + Math.floor(1000 + Math.random() * 9000);
+            document.getElementById('dispEmpReqCode').innerText = tempEmpReq;
+            document.getElementById('empStep1').style.display = 'none';
+            document.getElementById('empStep2').style.display = 'block';
+        } else {
+            alert('Invalid Staff ID or Password!');
+        }
+    }
+
+    function verifyEmpToken() {
+        const key = document.getElementById('empActivationKey').value.trim();
+        const expected = "KEY-" + tempEmpReq.replace("REQ-", "").split("").reverse().join("");
+        if(key === expected) {
+            launchSystem(document.getElementById('empUser').value, 'employee');
+        } else { alert('Invalid Approval Key!'); }
+    }
+
+    function toggleForgotView(val) {
+        document.getElementById('forgotAdminSec').style.display = val === 'admin' ? 'block' : 'none';
+        document.getElementById('forgotEmpSec').style.display = val === 'employee' ? 'block' : 'none';
+    }
+
+    function resetAdminPassword() {
+        const ans = document.getElementById('secAnswer').value.trim().toLowerCase();
+        const newP = document.getElementById('newAdminPass').value.trim();
+        if(ans === 'gwalior' && newP) {
+            state.adminPass = newP;
+            saveState();
+            alert('Admin Password updated on this device!');
+            setAuthTab('admin');
+        } else {
+            alert('Incorrect Security Answer!');
+        }
+    }
+
+    let tempResetReq = "";
+    function genResetToken() {
+        tempResetReq = "RST-" + Math.floor(1000 + Math.random() * 9000);
+        document.getElementById('dispResetReqCode').innerText = tempResetReq;
+    }
+
+    function resetEmpPassword() {
+        const k = document.getElementById('empResetAuthKey').value.trim();
+        const expected = "KEY-" + tempResetReq.replace("RST-", "").split("").reverse().join("");
+        const newP = document.getElementById('newEmpPass').value.trim();
+
+        if(k === expected && newP) {
+            state.empPass = newP;
+            saveState();
+            alert('Employee Password Reset Successful on this device!');
+            setAuthTab('employee');
+        } else {
+            alert('Invalid Authorization Key!');
+        }
+    }
+
+    function requestEmployeeActionApproval(actionName, callback) {
+        if(state.user.role === 'admin') { callback(); return; }
+        const req = "REQ-" + Math.floor(1000 + Math.random() * 9000);
+        const expectedKey = "KEY-" + req.replace("REQ-", "").split("").reverse().join("");
+        const userEnteredKey = prompt(`[STAFF LOCK]\nTo ${actionName}, Admin Token Approval is required.\nRequest Code for Admin: ${req}\nEnter Admin Key:`);
+
+        if(userEnteredKey === expectedKey) callback();
+        else alert("Token Authorization Failed!");
+    }
+
+    async function launchSystem(username, role) {
+        const loaded = await loadAllFromSupabase(true);
+        if(!loaded) return;
+
+        state.user = { username, role };
+        document.getElementById('authOverlay').style.display = 'none';
+        document.getElementById('appShell').style.display = 'flex';
+        document.getElementById('activeUserLabel').innerText = `${username} (${role.toUpperCase()})`;
+
+        if(role !== 'admin') {
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+        } else {
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
+        }
+
+        populateSelects();
+        renderDashboard();
+        renderMtInvoices();
+        renderPartyInvoices();
+        renderDrivers();
+        renderVehicles();
+        renderUserManagement();
+        renderAudits();
+        recalcGst();
+    }
+
+    function nav(paneId, el) {
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.sidebar-menu li').forEach(l => l.classList.remove('active'));
+        document.getElementById(paneId + 'Pane').classList.add('active');
+        if(el) el.classList.add('active');
+        document.getElementById('paneTitle').innerText = el.innerText.trim();
+    }
+
+    function populateSelects() {
+        const tSel1 = document.getElementById('mtTruckNo');
+        const dSel = document.getElementById('mtDriverName');
+        tSel1.innerHTML = ''; dSel.innerHTML = '';
+
+        state.vehicles.forEach(v => tSel1.innerHTML += `<option value="${v.vNo}">${v.vNo}</option>`);
+        state.drivers.forEach(d => dSel.innerHTML += `<option value="${d.name}">${d.name}</option>`);
+    }
+
+    function recalcMtMath() {
+        const w = parseFloat(document.getElementById('mtWeightTons').value) || 0;
+        const r = parseFloat(document.getElementById('mtRatePerTon').value) || 0;
+        const gross = w * r;
+        document.getElementById('mtGrossFreight').value = gross.toFixed(2);
+
+        const d = parseFloat(document.getElementById('mtDieselAmt').value) || 0;
+        const b = parseFloat(document.getElementById('mtDriverBhatta').value) || 0;
+        const f = parseFloat(document.getElementById('mtFastagAmt').value) || 0;
+        const t = parseFloat(document.getElementById('mtTruckExp').value) || 0;
+        const totalExp = d + b + f + t;
+
+        document.getElementById('mtNetAmount').value = (gross - totalExp).toFixed(2);
+    }
+
+    // INVOICE SAVE / DELETE
+    async function commitMtSave() {
+        const id = document.getElementById('editMtId').value;
+        const record = {
+            id: id ? parseInt(id) : Date.now(),
+            receiptNo: document.getElementById('mtReceiptNo').value || '',
+            tripDate: document.getElementById('mtTripDate').value,
+            paymentMode: document.getElementById('mtPaymentMode').value,
+            truckNo: document.getElementById('mtTruckNo').value,
+            partyName: document.getElementById('mtPartyName').value,
+            mineralType: document.getElementById('mtMineralType').value,
+            crusherName: document.getElementById('mtCrusherName').value,
+            royaltyNo: document.getElementById('mtRoyaltyNo').value,
+            driverName: document.getElementById('mtDriverName').value,
+            dieselPump: document.getElementById('mtDieselPump').value,
+            dieselBillNo: document.getElementById('mtDieselBillNo').value,
+            dieselLitres: parseFloat(document.getElementById('mtDieselLitres').value) || 0,
+            weightTons: parseFloat(document.getElementById('mtWeightTons').value) || 0,
+            ratePerTon: parseFloat(document.getElementById('mtRatePerTon').value) || 0,
+            grossFreight: parseFloat(document.getElementById('mtGrossFreight').value) || 0,
+            dieselAmt: parseFloat(document.getElementById('mtDieselAmt').value) || 0,
+            driverBhatta: parseFloat(document.getElementById('mtDriverBhatta').value) || 0,
+            fastagAmt: parseFloat(document.getElementById('mtFastagAmt').value) || 0,
+            truckExp: parseFloat(document.getElementById('mtTruckExp').value) || 0,
+            netAmount: parseFloat(document.getElementById('mtNetAmount').value) || 0,
+            docs: { ...base64Cache }
+        };
+
+        const exec = async () => {
+            const old = state.mtTrips.find(t => t.id === record.id) || null;
+
+            const mtRow = {
+                id: record.id,
+                receipt_no: record.receiptNo,
+                trip_date: record.tripDate || null,
+                payment_mode: record.paymentMode,
+                truck_no: record.truckNo,
+                party_name: record.partyName,
+                mineral_type: record.mineralType,
+                crusher_name: record.crusherName,
+                royalty_no: record.royaltyNo,
+                driver_name: record.driverName,
+                diesel_pump: record.dieselPump,
+                diesel_bill_no: record.dieselBillNo,
+                diesel_litres: record.dieselLitres,
+                weight_tons: record.weightTons,
+                rate_per_ton: record.ratePerTon,
+                gross_freight: record.grossFreight,
+                diesel_amt: record.dieselAmt,
+                driver_bhatta: record.driverBhatta,
+                fastag_amt: record.fastagAmt,
+                truck_exp: record.truckExp,
+                net_amount: record.netAmount,
+                docs: record.docs
+            };
+
+            const partyRow = {
+                id: record.id,
+                p_trip_date: record.tripDate || null,
+                p_truck_no: record.truckNo,
+                p_party_name: record.partyName,
+                p_mineral_type: record.mineralType,
+                p_receipt_no: record.receiptNo,
+                p_crusher_name: record.crusherName,
+                p_diesel_qty: record.dieselLitres,
+                p_diesel_amt: record.dieselAmt,
+                p_total_ton: record.weightTons,
+                p_bhada_rate: record.ratePerTon,
+                p_total_freight: record.grossFreight
+            };
+
+            const { error: mtError } = await supabaseClient
+                .from('mt_trips')
+                .upsert(mtRow);
+
+            if (mtError) {
+                cloudError("MT invoice save nahi hua.", mtError);
+                return;
+            }
+
+            const { error: partyError } = await supabaseClient
+                .from('party_trips')
+                .upsert(partyRow);
+
+            if (partyError) {
+                cloudError("Party invoice mirror save nahi hua.", partyError);
+                return;
+            }
+
+            state.mtTrips = id
+                ? state.mtTrips.map(t => t.id === record.id ? record : t)
+                : [record, ...state.mtTrips];
+
+            state.partyTrips = id
+                ? state.partyTrips.map(p => p.id === record.id ? {
+                    id: record.id,
+                    pTripDate: record.tripDate,
+                    pTruckNo: record.truckNo,
+                    pPartyName: record.partyName,
+                    pMineralType: record.mineralType,
+                    pReceiptNo: record.receiptNo,
+                    pCrusherName: record.crusherName,
+                    pDieselQty: record.dieselLitres,
+                    pDieselAmt: record.dieselAmt,
+                    pTotalTon: record.weightTons,
+                    pBhadaRate: record.ratePerTon,
+                    pTotalFreight: record.grossFreight
+                } : p)
+                : [{
+                    id: record.id,
+                    pTripDate: record.tripDate,
+                    pTruckNo: record.truckNo,
+                    pPartyName: record.partyName,
+                    pMineralType: record.mineralType,
+                    pReceiptNo: record.receiptNo,
+                    pCrusherName: record.crusherName,
+                    pDieselQty: record.dieselLitres,
+                    pDieselAmt: record.dieselAmt,
+                    pTotalTon: record.weightTons,
+                    pBhadaRate: record.ratePerTon,
+                    pTotalFreight: record.grossFreight
+                }, ...state.partyTrips];
+
+            await writeAudit(id ? "Edit Invoice" : "Create Invoice", record.id, old, record);
+
+            renderDashboard();
+            renderMtInvoices();
+            renderPartyInvoices();
+            resetMtForm();
+            alert('✅ Transport Invoice Saved Successfully!');
+        };
+
+        if(id) requestEmployeeActionApproval("Edit Invoice", exec);
+        else exec();
+    }
+
+    async function deleteInvoice(id) {
+        requestEmployeeActionApproval("Delete Invoice Entry", async () => {
+            if(!confirm("Are you sure you want to permanently delete this Invoice?")) return;
+
+            const old = state.mtTrips.find(t => t.id === id) || null;
+
+            const { error: mtError } = await supabaseClient
+                .from('mt_trips')
+                .delete()
+                .eq('id', id);
+
+            if(mtError) {
+                cloudError("MT invoice delete nahi hua.", mtError);
+                return;
+            }
+
+            const { error: partyError } = await supabaseClient
+                .from('party_trips')
+                .delete()
+                .eq('id', id);
+
+            if(partyError) {
+                cloudError("Party invoice delete nahi hua.", partyError);
+                return;
+            }
+
+            state.mtTrips = state.mtTrips.filter(t => t.id !== id);
+            state.partyTrips = state.partyTrips.filter(p => p.id !== id);
+
+            await writeAudit("Delete Invoice", id, old, null);
+
+            renderDashboard();
+            renderMtInvoices();
+            renderPartyInvoices();
+            renderAudits();
+            alert("✅ Invoice Deleted!");
+        });
+    }
+
+    function editMtInvoice(id) {
+        requestEmployeeActionApproval("Edit Invoice Entry", () => {
+            const t = state.mtTrips.find(x => x.id === id);
+            document.getElementById('editMtId').value = t.id;
+            document.getElementById('mtReceiptNo').value = t.receiptNo;
+            document.getElementById('mtTripDate').value = t.tripDate;
+            document.getElementById('mtPaymentMode').value = t.paymentMode;
+            document.getElementById('mtTruckNo').value = t.truckNo;
+            document.getElementById('mtPartyName').value = t.partyName;
+            document.getElementById('mtMineralType').value = t.mineralType;
+            document.getElementById('mtCrusherName').value = t.crusherName;
+            document.getElementById('mtRoyaltyNo').value = t.royaltyNo;
+            document.getElementById('mtDriverName').value = t.driverName;
+            document.getElementById('mtDieselPump').value = t.dieselPump;
+            document.getElementById('mtDieselBillNo').value = t.dieselBillNo;
+            document.getElementById('mtDieselLitres').value = t.dieselLitres;
+            document.getElementById('mtWeightTons').value = t.weightTons;
+            document.getElementById('mtRatePerTon').value = t.ratePerTon;
+            document.getElementById('mtGrossFreight').value = t.grossFreight;
+            document.getElementById('mtDieselAmt').value = t.dieselAmt;
+            document.getElementById('mtDriverBhatta').value = t.driverBhatta;
+            document.getElementById('mtFastagAmt').value = t.fastagAmt;
+            document.getElementById('mtTruckExp').value = t.truckExp;
+            document.getElementById('mtNetAmount').value = t.netAmount;
+            if(t.docs) base64Cache = { ...t.docs };
+        });
+    }
+
+    function resetMtForm() {
+        document.getElementById('mtInvoiceForm').reset();
+        document.getElementById('editMtId').value = '';
+        base64Cache = { docDiesel: '', docBill: '', docCrusher: '', docOther: '' };
+    }
+
+    // GST & LETTERHEAD ENGINES
+    function recalcGst() {
+        const taxable = parseFloat(document.getElementById('gstTaxable').value) || 0;
+        const rate = parseFloat(document.getElementById('gstRate').value) || 5;
+        const halfRate = rate / 2;
+        const cgst = (taxable * halfRate) / 100;
+        const sgst = (taxable * halfRate) / 100;
+        const total = taxable + cgst + sgst;
+
+        document.getElementById('gstCgst').value = cgst.toFixed(2);
+        document.getElementById('gstSgst').value = sgst.toFixed(2);
+        document.getElementById('gstTotal').value = total.toFixed(2);
+    }
+
+    function previewGstInvoice() {
+        const invNo = document.getElementById('gstInvNo').value;
+        const date = document.getElementById('gstDate').value;
+        const party = document.getElementById('gstPartyName').value;
+        const gstin = document.getElementById('gstPartyGstin').value;
+        const desc = document.getElementById('gstDesc').value;
+        const hsn = document.getElementById('gstHsn').value;
+        const taxable = parseFloat(document.getElementById('gstTaxable').value) || 0;
+        const cgst = parseFloat(document.getElementById('gstCgst').value) || 0;
+        const sgst = parseFloat(document.getElementById('gstSgst').value) || 0;
+        const total = parseFloat(document.getElementById('gstTotal').value) || 0;
+
+        const html = `
+            <div class="pdf-page">
+                <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:15px;">
+                    <div class="invoice-header-title">MANGLESHWAR TRANSPORT</div>
+                    <div style="font-size:12px; font-weight:700;">TAX INVOICE (GST)</div>
+                    <div>Mobile: 9098288370 | GSTIN: 23ABCDE1234F1Z5</div>
+                </div>
+                <div class="invoice-meta-grid">
+                    <div class="meta-item"><b>Invoice No:</b> ${invNo}</div>
+                    <div class="meta-item"><b>Date:</b> ${date}</div>
+                    <div class="meta-item"><b>Billed To:</b> ${party}</div>
+                    <div class="meta-item"><b>Party GSTIN:</b> ${gstin}</div>
+                </div>
+                <table class="invoice-table">
+                    <thead>
+                        <tr><th>HSN/SAC</th><th>Description</th><th>Taxable Value</th><th>CGST</th><th>SGST</th><th>Total</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>${hsn}</td>
+                            <td>${desc}</td>
+                            <td>₹${taxable.toFixed(2)}</td>
+                            <td>₹${cgst.toFixed(2)}</td>
+                            <td>₹${sgst.toFixed(2)}</td>
+                            <td><b>₹${total.toFixed(2)}</b></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="net-amount-card">
+                    <span>TOTAL INVOICE AMOUNT</span>
+                    <span>₹${total.toFixed(2)}</span>
+                </div>
+                <div class="signature-block">
+                    <div class="sig-line">Receiver's Signature</div>
+                    <div class="sig-line">For Mangleshwar Transport</div>
+                </div>
+            </div>
+        `;
+        document.getElementById('printableInvoiceArea').innerHTML = html;
+        document.getElementById('pdfPreviewModal').style.display = 'flex';
+    }
+
+    function previewLetterhead() {
+        const ref = document.getElementById('lhRefNo').value;
+        const date = document.getElementById('lhDate').value;
+        const sub = document.getElementById('lhSubject').value;
+        const body = document.getElementById('lhBody').value;
+
+        const html = `
+            <div class="pdf-page" style="min-height:900px;">
+                <div style="border-bottom:3px dashed #000; padding-bottom:12px; margin-bottom:25px; text-align:center;">
+                    <div class="invoice-header-title">MANGLESHWAR TRANSPORT</div>
+                    <div style="font-size:12px; font-weight:700;">Fleet Owners & Heavy Logistics Contractors</div>
+                    <div>Gwalior Hub, Madhya Pradesh | Contact: 9098288370</div>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:20px; font-weight:700;">
+                    <div>Ref No: ${ref}</div>
+                    <div>Date: ${date}</div>
+                </div>
+                <div style="font-size:14px; font-weight:800; text-decoration:underline; margin-bottom:20px;">SUBJECT: ${sub}</div>
+                <div style="font-size:13px; line-height:1.8; text-align:justify; white-space:pre-line;">${body}</div>
+                <div class="signature-block" style="margin-top:100px;">
+                    <div></div>
+                    <div class="sig-line">Authorized Signatory<br>Mangleshwar Transport</div>
+                </div>
+            </div>
+        `;
+        document.getElementById('printableInvoiceArea').innerHTML = html;
+        document.getElementById('pdfPreviewModal').style.display = 'flex';
+    }
+
+    // DRIVER & VEHICLE DELETE ENGINE
+    async function commitDriverSave() {
+        const id = document.getElementById('editDriverId').value;
+        const d = {
+            id: id ? parseInt(id) : Date.now(),
+            name: document.getElementById('drvNameInput').value.trim(),
+            phone: document.getElementById('drvPhoneInput').value.trim(),
+            dl: document.getElementById('drvDlInput').value.trim(),
+            joinDate: document.getElementById('drvDateInput').value
+        };
+
+        if(!d.name) {
+            alert('Please enter driver name.');
+            return;
+        }
+
+        const exec = async () => {
+            const old = state.drivers.find(x => x.id === d.id) || null;
+
+            const { error } = await supabaseClient
+                .from('drivers')
+                .upsert({
+                    id: d.id,
+                    name: d.name,
+                    phone: d.phone,
+                    dl: d.dl,
+                    join_date: d.joinDate || null
+                });
+
+            if(error) {
+                cloudError("Driver save nahi hua.", error);
+                return;
+            }
+
+            state.drivers = id
+                ? state.drivers.map(x => x.id === d.id ? d : x)
+                : [d, ...state.drivers];
+
+            await writeAudit(id ? "Edit Driver" : "Create Driver", d.id, old, d);
+            populateSelects();
+            renderDrivers();
+            renderAudits();
+
+            document.getElementById('editDriverId').value = '';
+            document.getElementById('drvNameInput').value = '';
+            document.getElementById('drvPhoneInput').value = '';
+            document.getElementById('drvDlInput').value = '';
+            document.getElementById('drvDateInput').value = '';
+
+            alert('✅ Driver saved to Supabase!');
+        };
+
+        if(id) requestEmployeeActionApproval("Edit Driver", exec);
+        else exec();
+    }
+
+    async function deleteDriver(id) {
+        requestEmployeeActionApproval("Delete Driver Record", async () => {
+            if(!confirm("Are you sure you want to delete this Driver?")) return;
+
+            const old = state.drivers.find(d => d.id === id) || null;
+            const { error } = await supabaseClient.from('drivers').delete().eq('id', id);
+
+            if(error) {
+                cloudError("Driver delete nahi hua.", error);
+                return;
+            }
+
+            state.drivers = state.drivers.filter(d => d.id !== id);
+            await writeAudit("Delete Driver", id, old, null);
+            populateSelects();
+            renderDrivers();
+            renderAudits();
+            alert("✅ Driver Deleted!");
+        });
+    }
+
+    function editDriver(id) {
+        requestEmployeeActionApproval("Modify Driver Record", () => {
+            const d = state.drivers.find(x => x.id === id);
+            document.getElementById('editDriverId').value = d.id;
+            document.getElementById('drvNameInput').value = d.name;
+            document.getElementById('drvPhoneInput').value = d.phone;
+            document.getElementById('drvDlInput').value = d.dl;
+            document.getElementById('drvDateInput').value = d.joinDate;
+        });
+    }
+
+   async function commitVehicleSave() {
+        const id = document.getElementById('editVehicleId').value;
+        const v = {
+            id: id ? parseInt(id) : Date.now(),
+            vNo: document.getElementById('vNoInput').value.trim(),
+            ins: document.getElementById('vInsInput').value,
+            fit: document.getElementById('vFitInput').value,
+            perm: document.getElementById('vPermInput').value
+        };
+
+        if(!v.vNo) {
+            alert('Please enter truck number.');
+            return;
+        }
+
+        const exec = async () => {
+            const old = state.vehicles.find(x => x.id === v.id) || null;
+
+            const { error } = await supabaseClient
+                .from('vehicles')
+                .upsert({
+                    id: v.id,
+                    v_no: v.vNo,
+                    insurance_expiry: v.ins || null,
+                    fitness_expiry: v.fit || null,
+                    permit_expiry: v.perm || null
+                });
+
+            if(error) {
+                cloudError("Vehicle save nahi hua.", error);
+                return;
+            }
+
+            state.vehicles = id
+                ? state.vehicles.map(x => x.id === v.id ? v : x)
+                : [v, ...state.vehicles];
+
+            await writeAudit(id ? "Edit Vehicle" : "Create Vehicle", v.id, old, v);
+            populateSelects();
+            renderVehicles();
+            renderAudits();
+
+            document.getElementById('editVehicleId').value = '';
+            document.getElementById('vNoInput').value = '';
+            document.getElementById('vInsInput').value = '';
+            document.getElementById('vFitInput').value = '';
+            document.getElementById('vPermInput').value = '';
+
+            alert("✅ Vehicle Supabase mein save ho gaya!");
+        };
+
+        if(id) requestEmployeeActionApproval("Edit Fleet Vehicle", exec);
+        else exec();
+    }
+          
+
+    async function deleteVehicle(id) {
+        requestEmployeeActionApproval("Delete Fleet Vehicle", async () => {
+            if(!confirm("Are you sure you want to delete this Vehicle?")) return;
+
+            const old = state.vehicles.find(v => v.id === id) || null;
+            const { error } = await supabaseClient.from('vehicles').delete().eq('id', id);
+
+            if(error) {
+                cloudError("Vehicle delete nahi hua.", error);
+                return;
+            }
+
+            state.vehicles = state.vehicles.filter(v => v.id !== id);
+            await writeAudit("Delete Vehicle", id, old, null);
+            populateSelects();
+            renderVehicles();
+            renderAudits();
+            alert("✅ Vehicle Deleted!");
+        });
+    }
+
+    function editVehicle(id) {
+        requestEmployeeActionApproval("Modify Vehicle Record", () => {
+            const v = state.vehicles.find(x => x.id === id);
+            document.getElementById('editVehicleId').value = v.id;
+            document.getElementById('vNoInput').value = v.vNo;
+            document.getElementById('vInsInput').value = v.ins;
+            document.getElementById('vFitInput').value = v.fit;
+            document.getElementById('vPermInput').value = v.perm;
+        });
+    }
+
+    // MULTI-PAGE PREVIEW ENGINE WITH MT VS PARTY SELECTOR
+    function previewInvoiceModal(id, defaultMode = 'mt') {
+        currentPreviewId = id;
+        document.getElementById('printModeSelect').value = defaultMode;
+        renderPreviewContent();
+        document.getElementById('pdfPreviewModal').style.display = 'flex';
+    }
+
+    function renderPreviewContent() {
+        if(!currentPreviewId) return;
+        const t = state.mtTrips.find(x => x.id === currentPreviewId);
+        const mode = document.getElementById('printModeSelect').value;
+        const container = document.getElementById('printableInvoiceArea');
+        container.innerHTML = '';
+
+        if(mode === 'party') {
+            // PARTY PRINT MODE (11 STRICT FIELDS ONLY)
+            container.innerHTML = `
+                <div class="pdf-page">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                            <div class="invoice-header-title">MANGLESHWAR TRANSPORT</div>
+                            <div style="font-size:12px; font-weight:700;">Mobile No: 9098288370</div>
+                            <div style="font-size:13px; font-weight:800; margin-top:4px;">PARTY TRANSPORT BILL</div>
+                        </div>
+                    </div>
+                    
+                    <div class="invoice-top-bar" style="margin-top:15px;">
+                        <div>1. Trip Date: <b>${t.tripDate}</b></div>
+                        <div>5. Receipt No: <b>${t.receiptNo}</b></div>
+                    </div>
+
+                    <div class="invoice-meta-grid">
+                        <div class="meta-item"><b>2. Truck No:</b> ${t.truckNo}</div>
+                        <div class="meta-item"><b>3. Party Name:</b> ${t.partyName}</div>
+                        <div class="meta-item"><b>4. Mineral Type:</b> ${t.mineralType}</div>
+                        <div class="meta-item"><b>6. Crusher Name:</b> ${t.crusherName}</div>
+                        <div class="meta-item"><b>7. Diesel Qty:</b> ${t.dieselLitres} Litres</div>
+                        <div class="meta-item"><b>8. Diesel Amount:</b> ₹${t.dieselAmt.toFixed(2)}</div>
+                    </div>
+
+                    <table class="invoice-table">
+                        <thead>
+                            <tr>
+                                <th>9. Mineral Qty (Ton)</th>
+                                <th>10. Rate Per Ton (₹)</th>
+                                <th style="text-align:right;">11. Total Freight Amount (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>${t.weightTons} Tons</td>
+                                <td>₹${t.ratePerTon.toFixed(2)}</td>
+                                <td style="text-align:right; font-weight:800;">₹${t.grossFreight.toFixed(2)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="net-amount-card">
+                        <span>TOTAL PARTY FREIGHT CHARGE</span>
+                        <span>₹${t.grossFreight.toFixed(2)}</span>
+                    </div>
+
+                    <div class="signature-block">
+                        <div class="sig-line">Customer Signature</div>
+                        <div class="sig-line">For Mangleshwar Transport</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            // MT PRINT MODE (FULL BREAKDOWN + ATTACHED DOCS MULTI-PAGE)
+            let docPages = '';
+            if(t.docs) {
+                if(t.docs.docDiesel) {
+                    docPages += `<div class="pdf-page doc-attachment-page"><h3 style="font-weight:800;">ATTACHMENT: DIESEL RECEIPT</h3><img src="${t.docs.docDiesel}" /></div>`;
+                }
+                if(t.docs.docBill) {
+                    docPages += `<div class="pdf-page doc-attachment-page"><h3 style="font-weight:800;">ATTACHMENT: ORIGINAL BILL</h3><img src="${t.docs.docBill}" /></div>`;
+                }
+                if(t.docs.docCrusher) {
+                    docPages += `<div class="pdf-page doc-attachment-page"><h3 style="font-weight:800;">ATTACHMENT: CRUSHER RECEIPT</h3><img src="${t.docs.docCrusher}" /></div>`;
+                }
+                if(t.docs.docOther) {
+                    docPages += `<div class="pdf-page doc-attachment-page"><h3 style="font-weight:800;">ATTACHMENT: OTHER DOCUMENT</h3><img src="${t.docs.docOther}" /></div>`;
+                }
+            }
+
+            const totalExp = t.dieselAmt + t.driverBhatta + t.fastagAmt + t.truckExp;
+
+            container.innerHTML = `
+                <div class="pdf-page">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                            <div class="invoice-header-title">MANGLESHWAR TRANSPORT</div>
+                            <div style="font-size:12px; font-weight:700;">Mobile No: 9098288370</div>
+                        </div>
+                    </div>
+                    
+                    <div class="invoice-top-bar" style="margin-top:10px;">
+                        <div>Receipt No: <b>${t.receiptNo}</b></div>
+                        <div>Date: <b>${t.tripDate}</b></div>
+                        <div>Payment Mode: <b>${t.paymentMode}</b></div>
+                    </div>
+
+                    <div class="invoice-meta-grid">
+                        <div class="meta-item"><b>Truck Number:</b> ${t.truckNo}</div>
+                        <div class="meta-item"><b>Party Name:</b> ${t.partyName}</div>
+                        <div class="meta-item"><b>Mineral Type:</b> ${t.mineralType}</div>
+                        <div class="meta-item"><b>Crusher Name:</b> ${t.crusherName}</div>
+                        <div class="meta-item"><b>Royalty No.:</b> ${t.royaltyNo}</div>
+                        <div class="meta-item"><b>Driver Details:</b> ${t.driverName}</div>
+                        <div class="meta-item"><b>Diesel Pump Name:</b> ${t.dieselPump}</div>
+                        <div class="meta-item"><b>Diesel Bill No.:</b> ${t.dieselBillNo}</div>
+                    </div>
+
+                    <div style="font-weight:800; font-size:13px; margin-bottom:6px;">Freight & Expense Breakdown</div>
+                    
+                    <table class="invoice-table">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;">S.No</th>
+                                <th>Description</th>
+                                <th style="text-align:right;">Amount (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1</td>
+                                <td>Gross Total Freight (${t.weightTons} Ton @ ₹${t.ratePerTon.toFixed(2)}/Ton)</td>
+                                <td style="text-align:right;">${t.grossFreight.toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td>Less: Diesel Expenses (${t.dieselLitres} Litres)</td>
+                                <td style="text-align:right;">- ${t.dieselAmt.toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td>3</td>
+                                <td>Less: Driver Charge / Bhatta</td>
+                                <td style="text-align:right;">- ${t.driverBhatta.toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td>4</td>
+                                <td>Less: Fastag Amount</td>
+                                <td style="text-align:right;">- ${t.fastagAmt.toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td>5</td>
+                                <td>Less: Truck Expenses (Maintenance / Misc)</td>
+                                <td style="text-align:right;">- ${t.truckExp.toFixed(2)}</td>
+                            </tr>
+                            <tr style="background:#f0f0f0 !important; font-weight:800;">
+                                <td colspan="2" style="text-align:right;">Total Expenses Deducted (2 + 3 + 4 + 5)</td>
+                                <td style="text-align:right;">- ${totalExp.toFixed(2)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="net-amount-card">
+                        <span>✓ FINAL NET AMOUNT (Total Freight - Total Expenses)</span>
+                        <span>${t.netAmount.toFixed(2)}</span>
+                    </div>
+
+                    <div class="signature-block">
+                        <div class="sig-line">Driver Signature</div>
+                        <div class="sig-line">For Mangleshwar Transport</div>
+                    </div>
+                </div>
+                ${docPages}
+            `;
+        }
+    }
+
+    function closePreviewModal() {
+        document.getElementById('pdfPreviewModal').style.display = 'none';
+    }
+
+    function exportInvoicePDF() {
+        const element = document.getElementById('printableInvoiceArea');
+        const opt = {
+            margin:       0.2,
+            filename:     `Invoice_${currentPreviewId}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(element).save();
+    }
+
+    // RENDERERS
+    function renderDashboard() {
+        let gross = 0, diesel = 0, exp = 0, net = 0;
+        const tbody = document.getElementById('dashTableBody');
+        tbody.innerHTML = '';
+
+        state.mtTrips.forEach(t => {
+            gross += t.grossFreight;
+            diesel += t.dieselAmt;
+            const ex = t.dieselAmt + t.driverBhatta + t.fastagAmt + t.truckExp;
+            exp += ex;
+            net += t.netAmount;
+
+            tbody.innerHTML += `<tr>
+                <td>${t.tripDate}</td>
+                <td><b>${t.receiptNo}</b></td>
+                <td>${t.truckNo}</td>
+                <td>${t.partyName}</td>
+                <td>₹${t.grossFreight.toFixed(2)}</td>
+                <td style="color:var(--emerald-accent); font-weight:700;">₹${t.netAmount.toFixed(2)}</td>
+                <td>
+                    <button class="btn btn-primary btn-sm" onclick="previewInvoiceModal(${t.id}, 'mt')"><i class="fa-solid fa-eye"></i> MT Print</button>
+                    <button class="btn btn-secondary btn-sm" onclick="previewInvoiceModal(${t.id}, 'party')"><i class="fa-solid fa-print"></i> Party Print</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteInvoice(${t.id})"><i class="fa-solid fa-trash"></i> Delete</button>
+                </td>
+            </tr>`;
+        });
+
+        document.getElementById('dashTotalFreight').innerText = `₹${gross.toFixed(2)}`;
+        document.getElementById('dashTotalDiesel').innerText = `₹${diesel.toFixed(2)}`;
+        document.getElementById('dashTotalExp').innerText = `₹${exp.toFixed(2)}`;
+        document.getElementById('dashNetProfit').innerText = `₹${net.toFixed(2)}`;
+    }
+
+    function renderMtInvoices() {
+        const tbody = document.getElementById('mtTableBody');
+        tbody.innerHTML = '';
+        state.mtTrips.forEach(t => {
+            tbody.innerHTML += `<tr>
+                <td><b>${t.receiptNo}</b></td>
+                <td>${t.tripDate}</td>
+                <td>${t.truckNo}</td>
+                <td>${t.partyName}</td>
+                <td style="color:var(--emerald-accent); font-weight:700;">₹${t.netAmount.toFixed(2)}</td>
+                <td>
+                    <button class="btn btn-secondary btn-sm" onclick="editMtInvoice(${t.id})"><i class="fa-solid fa-pen"></i> Edit</button>
+                    <button class="btn btn-primary btn-sm" onclick="previewInvoiceModal(${t.id}, 'mt')"><i class="fa-solid fa-file-pdf"></i> MT Print</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteInvoice(${t.id})"><i class="fa-solid fa-trash"></i> Delete</button>
+                </td>
+            </tr>`;
+        });
+    }
+
+    function renderPartyInvoices() {
+        const tbody = document.getElementById('partyTableBody');
+        tbody.innerHTML = '';
+        state.mtTrips.forEach(p => {
+            tbody.innerHTML += `<tr>
+                <td>${p.tripDate}</td>
+                <td><b>${p.receiptNo}</b></td>
+                <td>${p.partyName}</td>
+                <td>${p.truckNo}</td>
+                <td>${p.weightTons} Ton</td>
+                <td>₹${p.ratePerTon}</td>
+                <td style="color:var(--emerald-accent); font-weight:700;">₹${p.grossFreight.toFixed(2)}</td>
+                <td>
+                    <button class="btn btn-primary btn-sm" onclick="previewInvoiceModal(${p.id}, 'party')"><i class="fa-solid fa-download"></i> Download / Print</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteInvoice(${p.id})"><i class="fa-solid fa-trash"></i> Delete</button>
+                </td>
+            </tr>`;
+        });
+    }
+
+    function renderDrivers() {
+        const tbody = document.getElementById('driverTableBody');
+        tbody.innerHTML = '';
+        state.drivers.forEach(d => {
+            tbody.innerHTML += `<tr>
+                <td><b>${d.name}</b></td>
+                <td>${d.phone}</td>
+                <td>${d.dl}</td>
+                <td>${d.joinDate}</td>
+                <td>
+                    <button class="btn btn-secondary btn-sm" onclick="editDriver(${d.id})"><i class="fa-solid fa-pen"></i> Edit</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteDriver(${d.id})"><i class="fa-solid fa-trash"></i> Delete</button>
+                </td>
+            </tr>`;
+        });
+    }
+
+    function renderVehicles() {
+        const tbody = document.getElementById('vehicleTableBody');
+        tbody.innerHTML = '';
+        state.vehicles.forEach(v => {
+            tbody.innerHTML += `<tr>
+                <td><b>${v.vNo}</b></td>
+                <td>${v.ins}</td>
+                <td>${v.fit}</td>
+                <td>${v.perm}</td>
+                <td>
+                    <button class="btn btn-secondary btn-sm" onclick="editVehicle(${v.id})"><i class="fa-solid fa-pen"></i> Edit</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteVehicle(${v.id})"><i class="fa-solid fa-trash"></i> Delete</button>
+                </td>
+            </tr>`;
+        });
+    }
+
+    function generateReport() {
+        document.getElementById('reportResultCard').style.display = 'block';
+        let totalTrips = state.mtTrips.length;
+        let totalTon = 0, totalDiesel = 0, totalGross = 0, totalNet = 0;
+
+        state.mtTrips.forEach(t => {
+            totalTon += t.weightTons;
+            totalDiesel += t.dieselAmt;
+            totalGross += t.grossFreight;
+            totalNet += t.netAmount;
+        });
+
+        const tbody = document.getElementById('reportTableBody');
+        tbody.innerHTML = `<tr>
+            <td><b>Consolidated Freight Performance</b></td>
+            <td>${totalTrips} Trips</td>
+            <td>${totalTon.toFixed(3)} Tons</td>
+            <td style="color:var(--amber-accent);">₹${totalDiesel.toFixed(2)}</td>
+            <td>₹${totalGross.toFixed(2)}</td>
+            <td style="color:var(--emerald-accent); font-weight:800;">₹${totalNet.toFixed(2)}</td>
+        </tr>`;
+    }
+
+    async function adminAddEmployee() {
+        const u = document.getElementById('newEmpUser').value.trim();
+        const p = document.getElementById('newEmpPassInput').value.trim();
+
+        if(!u || !p) {
+            alert('Provide valid details!');
+            return;
+        }
+
+        if(state.employees.some(e => e.username === u)) {
+            alert('This employee username already exists.');
+            return;
+        }
+
+        const id = Date.now();
+        const employee = { id, username: u, role: 'employee' };
+
+        const { error } = await supabaseClient
+            .from('employees')
+            .insert({
+                id,
+                username: u,
+                role: 'employee'
+            });
+
+        if(error) {
+            cloudError("Employee create nahi hua.", error);
+            return;
+        }
+
+        state.employees.push(employee);
+        state.empPass = p;
+        saveState();
+        await writeAudit("Create Employee", id, null, employee);
+        renderUserManagement();
+        renderAudits();
+
+        document.getElementById('newEmpUser').value = '';
+        document.getElementById('newEmpPassInput').value = '';
+
+        alert(`✅ Employee ${u} created in Supabase!`);
+    }
+
+    async function deleteEmployee(id) {
+        if(!confirm('Delete this Employee access?')) return;
+
+        const old = state.employees.find(e => e.id === id) || null;
+        const { error } = await supabaseClient.from('employees').delete().eq('id', id);
+
+        if(error) {
+            cloudError("Employee delete nahi hua.", error);
+            return;
+        }
+
+        state.employees = state.employees.filter(e => e.id !== id);
+        await writeAudit("Delete Employee", id, old, null);
+        renderUserManagement();
+        renderAudits();
+    }
+
+    function changeEmpPasswordPrompt() {
+        const p = prompt('Enter new global Staff Password:');
+        if(p) {
+            state.empPass = p.trim();
+            saveState();
+            alert('Staff Password updated on this device.');
+        }
+    }
+
+    function adminGenerateActivationKey() {
+        const req = document.getElementById('adminReqKeyInput').value.trim();
+        if(!req.includes('-')) { alert('Enter valid REQ code'); return; }
+        const clean = req.split('-')[1];
+        const key = "KEY-" + clean.split("").reverse().join("");
+        document.getElementById('adminGeneratedKey').innerText = key;
+    }
+
+    function renderUserManagement() {
+        const tbody = document.getElementById('userListTableBody');
+        tbody.innerHTML = '';
+        state.employees.forEach(e => {
+            tbody.innerHTML += `<tr>
+                <td><b>${e.username}</b></td>
+                <td><span style="color:var(--brand-accent); font-weight:700;">${e.role.toUpperCase()}</span></td>
+                <td>
+                    <button class="btn btn-warning btn-sm" onclick="changeEmpPasswordPrompt()"><i class="fa-solid fa-key"></i> Pass</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteEmployee(${e.id})"><i class="fa-solid fa-trash"></i> Delete</button>
+                </td>
+            </tr>`;
+        });
+    }
+
+    function renderAudits() {
+        const tbody = document.getElementById('auditTableBody');
+        tbody.innerHTML = '';
+        state.audits.forEach(a => {
+            tbody.innerHTML += `<tr>
+                <td>${a.timestamp}</td>
+                <td><b>${a.user}</b></td>
+                <td>${a.type}</td>
+                <td>${a.entityId}</td>
+                <td><span style="color:var(--rose-accent);">${a.before}</span></td>
+                <td><span style="color:var(--emerald-accent);">${a.after}</span></td>
+            </tr>`;
+        });
+    }
+</script>
+</body>
+</html>	
