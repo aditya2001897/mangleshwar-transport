@@ -742,18 +742,24 @@ const supabaseClient = window.supabase.createClient(
     SUPABASE_KEY
 );
 
-async function loadVehiclesFromSupabase() {
+async function loadVehiclesFromSupabase(showError=true) {
     const { data, error } = await supabaseClient
         .from('vehicles')
-        .select('*');
+        .select('*')
+        .order('id', { ascending: true });
 
     if (error) {
         console.error("Vehicle Load Error:", error);
-        alert("Vehicle data load nahi hua: " + error.message);
-        return;
+        if(showError) console.warn("Vehicle cloud load failed; local data retained.", error.message);
+        return false;
     }
 
-    console.log("Vehicles from Supabase:", data);
+    state.vehicles = (data || []).map(mapVehicleRow);
+    saveState();
+    populateSelects();
+    renderVehicles();
+    console.log("Vehicles from Supabase:", state.vehicles);
+    return true;
 }
 
     const Store = {
@@ -783,6 +789,13 @@ async function loadVehiclesFromSupabase() {
         adminPass: Store.get('adminPass', 'admin123'),
         empPass: Store.get('empPass', 'emp123')
     };
+
+    // SAFE NUMERIC IDS: Date.now() creates 13-digit values which overflow
+    // normal PostgreSQL INTEGER columns. Use the next available numeric ID instead.
+    function nextNumericId(list) {
+        const nums = (list || []).map(x => Number(x?.id)).filter(Number.isFinite);
+        return (nums.length ? Math.max(...nums) : 0) + 1;
+    }
 
     function saveState() {
         Store.set('mtTrips', state.mtTrips);
@@ -1016,7 +1029,7 @@ async function loadVehiclesFromSupabase() {
         renderUserManagement();renderAudits();return true;
     }
     async function writeAudit(type,id,beforeValue,afterValue){
-        const row={id:Date.now(),timestamp:new Date().toISOString(),user:state.user?.username||'system',
+        const row={id:nextNumericId(state.audits),timestamp:new Date().toISOString(),user:state.user?.username||'system',
             action_type:type,entity_id:String(id??''),before_change:JSON.stringify(beforeValue??null),
             after_change:JSON.stringify(afterValue??null)};
         const {data,error}=await supabaseClient.from('audit_logs').insert(row).select().single();
@@ -1039,7 +1052,7 @@ async function loadVehiclesFromSupabase() {
     // INVOICE SAVE / DELETE
     async function commitMtSave() {
         const id=document.getElementById('editMtId').value;
-        const r={id:id?parseInt(id):Date.now(),receiptNo:document.getElementById('mtReceiptNo').value||'2610704726',
+        const r={id:id?parseInt(id):nextNumericId(state.mtTrips),receiptNo:document.getElementById('mtReceiptNo').value||'2610704726',
         tripDate:document.getElementById('mtTripDate').value,paymentMode:document.getElementById('mtPaymentMode').value,
         truckNo:document.getElementById('mtTruckNo').value,partyName:document.getElementById('mtPartyName').value,
         mineralType:document.getElementById('mtMineralType').value,crusherName:document.getElementById('mtCrusherName').value,
@@ -1053,9 +1066,24 @@ async function loadVehiclesFromSupabase() {
         const save=async()=>{
             const old=state.mtTrips.find(x=>x.id===r.id)||null;
             const a=await supabaseClient.from('mt_trips').upsert(mtToRow(r));
-            if(a.error){cloudError("MT invoice save nahi hua.",a.error);return;}
+            if(a.error){
+                console.error("MT invoice cloud save failed:",a.error);
+                // Never lose the entry if Supabase/RLS is temporarily unavailable.
+                state.mtTrips = id ? state.mtTrips.map(x=>x.id===r.id?r:x) : [r,...state.mtTrips];
+                saveState(); renderDashboard(); renderMtInvoices();
+                alert("⚠️ Invoice local browser mein save ho gaya, lekin Supabase mein save nahi hua:\n" + (a.error.message||"Unknown error"));
+                return;
+            }
             const b=await supabaseClient.from('party_trips').upsert(partyFromMt(r));
-            if(b.error){cloudError("MT invoice save hua, Party Invoice sync nahi hua.",b.error);return;}
+            if(b.error){
+                console.error("Party invoice sync failed:",b.error);
+                state.mtTrips = id ? state.mtTrips.map(x=>x.id===r.id?r:x) : [r,...state.mtTrips];
+                saveState(); renderDashboard(); renderMtInvoices();
+                alert("⚠️ Main invoice Supabase mein save ho gaya, Party Invoice sync nahi hua:\n" + (b.error.message||"Unknown error"));
+                return;
+            }
+            state.mtTrips = id ? state.mtTrips.map(x=>x.id===r.id?r:x) : [r,...state.mtTrips];
+            saveState(); renderDashboard(); renderMtInvoices();
             await writeAudit(id?"Edit MT Invoice":"Create MT Invoice",r.id,old,r);
             await loadAllFromSupabase(false);resetMtForm();alert("✅ Transport Invoice Saved Successfully!");
         };
@@ -1233,7 +1261,7 @@ async function loadVehiclesFromSupabase() {
     async function commitDriverSave() {
         const id = document.getElementById('editDriverId').value;
         const d = {
-            id: id ? parseInt(id) : Date.now(),
+            id: id ? parseInt(id) : nextNumericId(state.drivers),
             name: document.getElementById('drvNameInput').value.trim(),
             phone: document.getElementById('drvPhoneInput').value.trim(),
             dl: document.getElementById('drvDlInput').value.trim(),
@@ -1255,10 +1283,14 @@ async function loadVehiclesFromSupabase() {
 
             if (error) {
                 console.error('Driver Save Error:', error);
-                alert('❌ Driver save nahi hua:\n' + error.message);
+                state.drivers = id ? state.drivers.map(x=>x.id===d.id?d:x) : [d,...state.drivers];
+                saveState(); populateSelects(); renderDrivers();
+                alert('⚠️ Driver browser mein save ho gaya, lekin Supabase mein save nahi hua:\n' + error.message);
                 return;
             }
 
+            state.drivers = id ? state.drivers.map(x=>x.id===d.id?d:x) : [d,...state.drivers];
+            saveState(); populateSelects(); renderDrivers();
             alert('✅ Driver Supabase mein save ho gaya!');
             document.getElementById('editDriverId').value = '';
             document.getElementById('drvNameInput').value = '';
@@ -1305,14 +1337,15 @@ async function loadVehiclesFromSupabase() {
 
    async function commitVehicleSave() {
     const id = document.getElementById('editVehicleId').value;
-
     const v = {
-        id: id ? parseInt(id) : Date.now(),
-        vNo: document.getElementById('vNoInput').value,
+        id: id ? parseInt(id) : nextNumericId(state.vehicles),
+        vNo: document.getElementById('vNoInput').value.trim(),
         ins: document.getElementById('vInsInput').value,
         fit: document.getElementById('vFitInput').value,
         perm: document.getElementById('vPermInput').value
     };
+
+    if (!v.vNo) { alert('Please enter Truck Number.'); return; }
 
     const { error } = await supabaseClient
         .from('vehicles')
@@ -1326,20 +1359,22 @@ async function loadVehiclesFromSupabase() {
 
     if (error) {
         console.error("Vehicle Save Error:", error);
-        alert("❌ Vehicle save nahi hua:\n" + error.message);
+        state.vehicles = id ? state.vehicles.map(x=>x.id===v.id?v:x) : [v,...state.vehicles];
+        saveState(); populateSelects(); renderVehicles();
+        alert("⚠️ Vehicle browser mein save ho gaya, lekin Supabase mein save nahi hua:\n" + error.message);
         return;
     }
 
-    
+    state.vehicles = id ? state.vehicles.map(x=>x.id===v.id?v:x) : [v,...state.vehicles];
+    saveState(); populateSelects(); renderVehicles();
     document.getElementById('editVehicleId').value = '';
     document.getElementById('vNoInput').value = '';
     document.getElementById('vInsInput').value = '';
     document.getElementById('vFitInput').value = '';
     document.getElementById('vPermInput').value = '';
-
-    await loadVehiclesFromSupabase();
+    await loadVehiclesFromSupabase(false);
+    alert('✅ Vehicle Supabase mein save ho gaya!');
 }
-          
 
     function deleteVehicle(id){
         requestEmployeeActionApproval("Delete Fleet Vehicle",async()=>{
@@ -1679,7 +1714,7 @@ async function loadVehiclesFromSupabase() {
     async function adminAddEmployee(){
         const u=document.getElementById('newEmpUser').value.trim(),p=document.getElementById('newEmpPassInput').value.trim();
         if(!u||!p){alert('Provide valid details!');return;}
-        const id=Date.now(),row={id,username:u,role:'employee'};
+        const id=nextNumericId(state.employees),row={id,username:u,role:'employee'};
         const a=await supabaseClient.from('employees').insert(row);
         if(a.error){cloudError("Employee save nahi hua.",a.error);return;}
         state.empPass=p;saveState();await writeAudit("Create Employee",id,null,row);await loadAllFromSupabase(false);
